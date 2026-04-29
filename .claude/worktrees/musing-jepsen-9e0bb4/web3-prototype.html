@@ -1,0 +1,2911 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Web3 Wallet — Prototype</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --bg: #0A0A14;
+    --surface: #13132A;
+    --surface2: #1C1C38;
+    --surface3: #242445;
+    --purple: #7C3AED;
+    --purple-light: #9D5CF6;
+    --purple-glow: rgba(124, 58, 237, 0.3);
+    --green: #22C55E;
+    --green-dark: #16A34A;
+    --text: #FFFFFF;
+    --text-muted: #9898B8;
+    --text-dim: #6666AA;
+    --border: rgba(255,255,255,0.08);
+    --pill-bg: rgba(255,255,255,0.07);
+  }
+
+  body {
+    background: #0A0A18;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    padding: 20px;
+  }
+
+  /* Phone frame */
+  .phone {
+    width: 390px;
+    height: 844px;
+    background:
+      radial-gradient(ellipse 100% 55% at 50% 0%, #7C3AED 0%, #4C1D95 35%, #1e0a3c 60%, transparent 80%),
+      #0A0A14;
+    border-radius: 50px;
+    overflow: hidden;
+    position: relative;
+    box-shadow:
+      0 0 0 2px #2A2A4A,
+      0 0 0 4px #141428,
+      0 50px 120px rgba(0,0,0,0.8),
+      0 0 80px var(--purple-glow);
+    flex-shrink: 0;
+  }
+
+  /* Screen base */
+  .screen {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    background: transparent;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.22s ease;
+    overflow: hidden;
+  }
+  .screen.active {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  /* Status bar */
+  .status-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 28px 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    flex-shrink: 0;
+    position: relative;
+    z-index: 10;
+  }
+  .status-icons { display: flex; gap: 6px; align-items: center; }
+  .status-icons svg { width: 16px; height: 16px; fill: white; }
+
+  /* Bottom nav */
+  .bottom-nav {
+    display: flex;
+    background: #111126;
+    border-top: 1px solid var(--border);
+    padding: 10px 0 28px;
+    flex-shrink: 0;
+  }
+  .nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    padding: 6px;
+    border: none;
+    background: none;
+    color: var(--text-dim);
+    font-size: 11px;
+    font-weight: 500;
+    transition: color 0.15s;
+  }
+  .nav-item.active { color: var(--purple-light); }
+  .nav-item svg { width: 22px; height: 22px; }
+
+  /* Scrollable content */
+  .scroll-content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .scroll-content::-webkit-scrollbar { display: none; }
+
+  /* ========================
+     HOME SCREEN
+  ======================== */
+  #screen-home .header-bg {
+    background: transparent;
+    padding: 0 0 32px;
+    position: relative;
+  }
+  #screen-home .header-bg::before {
+    content: '';
+    position: absolute;
+    top: -40px; left: 50%; transform: translateX(-50%);
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(124,58,237,0.4) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .home-title {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 14px;
+    font-weight: 500;
+    padding: 4px 0 12px;
+  }
+
+  .network-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 20px;
+    padding: 0 12px 0 6px;
+    height: 32px;
+    font-size: 12px;
+    color: var(--text);
+    font-weight: 600;
+    cursor: pointer;
+    width: fit-content;
+  }
+  .network-dot {
+    width: 20px; height: 20px;
+    background: transparent;
+    border-radius: 50%;
+    overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .network-dot img { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; }
+  .network-chevron { color: var(--text-muted); font-size: 11px; margin-left: 2px; }
+
+  .address-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,255,255,0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 20px;
+    padding: 0 12px 0 8px;
+    height: 32px;
+    font-size: 12px;
+    color: var(--text);
+    font-weight: 600;
+    width: fit-content;
+    cursor: pointer;
+  }
+  .address-pill svg { width: 14px; height: 14px; fill: var(--text-muted); }
+
+  .balance-section { text-align: center; padding: 0 24px 24px; }
+  .balance-label { font-size: 13px; color: var(--text-muted); margin-bottom: 4px; }
+  .balance-amount {
+    font-size: 38px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -1px;
+  }
+  .balance-amount span { font-size: 22px; color: var(--text-muted); }
+  .balance-hide {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 4px;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  /* Quick actions */
+  .quick-actions {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    padding: 0 24px 28px;
+  }
+  .action-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    background: none;
+    border: none;
+    color: var(--text);
+  }
+  .action-icon {
+    width: 60px; height: 60px;
+    background: #8B6FE0;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    border: none;
+    transition: background 0.15s, transform 0.1s;
+  }
+  .action-icon:active { transform: scale(0.93); background: #7C5FD0; }
+  .action-icon svg { width: 22px; height: 22px; stroke: white; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .action-label { font-size: 12px; font-weight: 500; }
+
+  /* Banner */
+  .banner {
+    margin: 0 16px 20px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+  }
+  .banner-icon {
+    width: 32px; height: 32px;
+    background: #1A1A3A;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .banner-text { font-size: 13px; font-weight: 600; color: var(--text); flex: 1; }
+  .banner-arrow { color: var(--text-muted); font-size: 16px; }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    padding: 0 16px;
+    margin-bottom: 2px;
+    border-bottom: 1px solid var(--border);
+  }
+  .tab {
+    padding: 10px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-dim);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: all 0.15s;
+  }
+  .tab.active { color: var(--purple-light); border-bottom-color: var(--purple-light); }
+
+  /* Token list */
+  .token-list { padding: 4px 16px; }
+  .token-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: opacity 0.1s;
+  }
+  .token-item:last-child { border-bottom: none; }
+  .token-item:active { opacity: 0.7; }
+  .token-icon {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    overflow: visible;
+    flex-shrink: 0;
+    background: rgba(255,255,255,0.06);
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+  }
+  .token-icon img { width: 44px; height: 44px; object-fit: contain; border-radius: 50%; }
+  .token-network-badge {
+    position: absolute;
+    bottom: -2px; right: -2px;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    border: 2px solid #0D0D1A;
+    overflow: hidden;
+    background: #1a1a2e;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .token-network-badge img { width: 14px; height: 14px; border-radius: 50%; object-fit: cover; }
+  .token-info { flex: 1; min-width: 0; }
+  .token-name { font-size: 15px; font-weight: 700; color: var(--text); }
+  .token-sub { font-size: 12px; color: var(--text-muted); margin-top: 3px; font-weight: 500; }
+  .token-values { text-align: right; flex-shrink: 0; }
+  .token-amount { font-size: 15px; font-weight: 600; color: var(--text); }
+  .token-change {
+    font-size: 13px;
+    font-weight: 600;
+    margin-top: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 3px;
+  }
+  .token-change.negative { color: #F87171; }
+  .token-change.positive { color: var(--green); }
+  .token-change svg { width: 12px; height: 12px; }
+
+  /* NFT detail */
+  .nft-detail-image {
+    width: calc(100% - 32px);
+    margin: 0 16px 20px;
+    aspect-ratio: 1;
+    border-radius: 20px;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .nft-detail-image div { width: 100%; height: 100%; }
+  .nft-section-title { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 10px; }
+  .nft-desc-text { font-size: 14px; color: var(--text-muted); line-height: 1.6; }
+  .nft-view-more {
+    display: inline-flex; align-items: center; gap: 4px;
+    color: var(--purple-light); font-size: 14px; font-weight: 600;
+    cursor: pointer; margin-top: 8px; background: none; border: none; font-family: inherit;
+  }
+  .nft-view-more svg { width: 16px; height: 16px; transition: transform 0.2s; }
+  .nft-view-more.expanded svg { transform: rotate(180deg); }
+  .nft-details-card {
+    margin: 0 16px 24px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  .nft-detail-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .nft-detail-row:last-child { border-bottom: none; }
+  .nft-detail-row-label { color: var(--text-muted); }
+  .nft-detail-row-val { color: var(--purple-light); font-weight: 500; font-family: monospace; font-size: 12px; }
+  .nft-detail-row-val.plain { color: var(--text); font-family: inherit; font-size: 13px; }
+  .nft-traits { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 16px 24px; }
+  .nft-trait {
+    background: rgba(124,58,237,0.15);
+    border: 1px solid rgba(124,58,237,0.3);
+    border-radius: 10px;
+    padding: 6px 12px;
+  }
+  .nft-trait-type { font-size: 10px; color: var(--purple-light); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+  .nft-trait-val  { font-size: 13px; font-weight: 700; color: var(--text); margin-top: 2px; }
+
+  /* ── NFT Detail CTA System ── */
+  .nft-market-stats {
+    display: flex; margin: 0 16px 20px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden;
+  }
+  .nft-stat { flex: 1; padding: 12px 10px; border-right: 1px solid var(--border); text-align: center; }
+  .nft-stat:last-child { border-right: none; }
+  .nft-stat-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .nft-stat-val { font-size: 15px; font-weight: 700; color: var(--text); }
+  .nft-stat-val.offer { color: var(--green); }
+  .nft-stat-val.muted { color: var(--text-dim); font-size: 12px; font-weight: 500; }
+
+  .nft-cta-section { padding: 0 16px 4px; display: flex; flex-direction: column; gap: 10px; }
+  .nft-btn-row { display: flex; gap: 10px; }
+  .nft-btn {
+    flex: 1; padding: 15px; border-radius: 14px; font-size: 15px; font-weight: 700;
+    font-family: inherit; cursor: pointer; border: none;
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+    transition: opacity 0.15s, transform 0.1s; position: relative;
+  }
+  .nft-btn:active { opacity: 0.82; transform: scale(0.98); }
+  .nft-btn.primary   { background: var(--purple); color: #fff; }
+  .nft-btn.accept    { background: linear-gradient(135deg,#22C55E,#16A34A); color: #fff; }
+  .nft-btn.outlined  { background: transparent; color: var(--text); border: 1px solid var(--border); }
+  .nft-btn.listed    { background: rgba(124,58,237,0.15); color: var(--purple-light); border: 1px solid rgba(124,58,237,0.3); }
+  .nft-btn.danger    { background: transparent; color: #F87171; border: 1px solid rgba(248,113,113,0.28); }
+  .nft-btn.ghost     { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .nft-btn svg       { width: 18px; height: 18px; flex-shrink: 0; }
+  .nft-btn-sub       { font-size: 11px; font-weight: 500; opacity: 0.8; margin-left: 2px; }
+  @keyframes nft-spin { to { transform: rotate(360deg); } }
+  .nft-btn.loading::after {
+    content: ''; width: 16px; height: 16px; border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff;
+    animation: nft-spin 0.65s linear infinite; position: absolute; right: 16px;
+  }
+
+  .nft-secondary-actions { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin: 12px 16px 16px; }
+  .nft-chip {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 10px 4px; display: flex; flex-direction: column; align-items: center; gap: 6px;
+    cursor: pointer; font-family: inherit; transition: background 0.15s, transform 0.1s;
+  }
+  .nft-chip:active { background: var(--surface2); transform: scale(0.95); }
+  .nft-chip-icon {
+    width: 32px; height: 32px; border-radius: 10px; background: rgba(124,58,237,0.12);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .nft-chip-icon svg { width: 15px; height: 15px; stroke: var(--purple-light); }
+  .nft-chip-label { font-size: 9.5px; font-weight: 600; color: var(--text-muted); text-align: center; line-height: 1.25; }
+
+  .nft-utility-section { margin: 0 16px 16px; }
+  .nft-utility-label { font-size: 10px; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 8px; }
+  .nft-utility-row { display: flex; gap: 8px; }
+  .nft-utility-btn {
+    flex: 1; padding: 10px 6px; background: rgba(34,197,94,0.07); border: 1px solid rgba(34,197,94,0.2);
+    border-radius: 12px; display: flex; flex-direction: column; align-items: center; gap: 4px;
+    cursor: pointer; font-family: inherit; transition: background 0.15s;
+  }
+  .nft-utility-btn:active { background: rgba(34,197,94,0.14); }
+  .nft-utility-btn svg { width: 17px; height: 17px; stroke: #22C55E; }
+  .nft-utility-btn-label { font-size: 9.5px; font-weight: 700; color: #22C55E; text-align: center; }
+
+  .nft-more-trigger {
+    margin: 0 16px 28px; padding: 12px; background: transparent; border: 1px solid var(--border);
+    border-radius: 12px; color: var(--text-muted); font-size: 13px; font-weight: 600;
+    font-family: inherit; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
+    width: calc(100% - 32px); transition: background 0.15s;
+  }
+  .nft-more-trigger:active { background: var(--surface); }
+
+  /* More sheet */
+  .nft-more-sheet {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: var(--surface2); border-top-left-radius: 24px; border-top-right-radius: 24px;
+    padding: 8px 0 36px; z-index: 200;
+    transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.32,0.72,0,1);
+  }
+  .nft-more-sheet.open { transform: translateY(0); }
+  .nft-sheet-handle { width: 40px; height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; margin: 8px auto 20px; }
+  .nft-more-item {
+    display: flex; align-items: center; gap: 14px; padding: 13px 20px;
+    cursor: pointer; font-size: 15px; font-weight: 500; color: var(--text); transition: background 0.1s;
+  }
+  .nft-more-item:active { background: rgba(255,255,255,0.04); }
+  .nft-more-icon {
+    width: 36px; height: 36px; border-radius: 10px; background: var(--surface3);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .nft-more-icon svg { width: 18px; height: 18px; }
+  .nft-more-item.danger { color: #F87171; }
+  .nft-more-item.danger .nft-more-icon { background: rgba(248,113,113,0.1); }
+  .nft-more-divider { height: 1px; background: var(--border); margin: 6px 0; }
+  .nft-more-section-label { font-size: 10px; color: var(--text-dim); font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; padding: 8px 20px 2px; }
+
+  /* Sheet/confirm backdrop */
+  .nft-overlay {
+    position: absolute; inset: 0; background: rgba(0,0,0,0.6); z-index: 199;
+    opacity: 0; pointer-events: none; transition: opacity 0.2s;
+  }
+  .nft-overlay.open { opacity: 1; pointer-events: all; }
+
+  /* Confirm modal */
+  .nft-confirm-sheet {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: var(--surface2); border-top-left-radius: 24px; border-top-right-radius: 24px;
+    padding: 28px 20px 40px; z-index: 300;
+    transform: translateY(100%); transition: transform 0.25s cubic-bezier(0.32,0.72,0,1);
+  }
+  .nft-confirm-sheet.open { transform: translateY(0); }
+  .nft-confirm-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.7); z-index: 299; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+  .nft-confirm-overlay.open { opacity: 1; pointer-events: all; }
+  .nft-confirm-icon-wrap { width: 56px; height: 56px; border-radius: 18px; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; }
+  .nft-confirm-icon-wrap.warn { background: rgba(248,113,113,0.12); }
+  .nft-confirm-icon-wrap.info { background: rgba(124,58,237,0.12); }
+  .nft-confirm-icon-wrap.accept { background: rgba(34,197,94,0.12); }
+  .nft-confirm-title { font-size: 20px; font-weight: 800; color: var(--text); text-align: center; margin-bottom: 8px; }
+  .nft-confirm-desc  { font-size: 14px; color: var(--text-muted); text-align: center; line-height: 1.55; margin-bottom: 20px; }
+  .nft-confirm-row { display: flex; justify-content: space-between; padding: 11px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .nft-confirm-row:last-of-type { border-bottom: none; margin-bottom: 4px; }
+  .nft-confirm-row span:first-child { color: var(--text-muted); }
+  .nft-confirm-row span:last-child  { color: var(--text); font-weight: 600; }
+  .nft-confirm-btns { display: flex; gap: 10px; margin-top: 22px; }
+  .nft-confirm-cancel { flex: 1; padding: 14px; border-radius: 14px; background: var(--surface3); border: none; color: var(--text); font-size: 15px; font-weight: 700; font-family: inherit; cursor: pointer; }
+  .nft-confirm-action { flex: 1; padding: 14px; border-radius: 14px; border: none; color: #fff; font-size: 15px; font-weight: 700; font-family: inherit; cursor: pointer; transition: opacity 0.15s; }
+  .nft-confirm-action.ok   { background: var(--purple); }
+  .nft-confirm-action.burn { background: #DC2626; }
+  .nft-confirm-action.go   { background: linear-gradient(135deg,#22C55E,#16A34A); }
+
+  /* NFT cards */
+  .nft-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.15s, opacity 0.15s;
+  }
+  .nft-card:active { transform: scale(0.96); opacity: 0.85; }
+  .nft-img {
+    width: 100%;
+    aspect-ratio: 1;
+    overflow: hidden;
+    background: var(--surface2);
+  }
+  .nft-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .nft-info { padding: 10px 10px 12px; }
+  .nft-name { font-size: 12px; font-weight: 700; color: var(--text); margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .nft-col  { font-size: 11px; color: var(--text-dim); margin-bottom: 6px; }
+  .nft-price { font-size: 12px; font-weight: 700; color: var(--purple-light); }
+
+  /* ========================
+     DAPPS SCREEN
+  ======================== */
+  #screen-dapps .dapps-header {
+    padding: 12px 24px 20px;
+    background: transparent;
+  }
+  .dapps-title { font-size: 28px; font-weight: 700; color: var(--text); margin-bottom: 10px; }
+  .dapps-desc { font-size: 14px; color: var(--text-muted); line-height: 1.5; }
+  .page-title { text-align: center; font-size: 16px; font-weight: 600; color: var(--text); padding: 4px 0 12px; }
+
+  /* Filter chips */
+  .filter-chips {
+    display: flex;
+    gap: 8px;
+    padding: 0 16px 20px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .filter-chips::-webkit-scrollbar { display: none; }
+  .chip {
+    padding: 7px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    border: none;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+  .chip.active { background: var(--purple); color: white; }
+  .chip:not(.active) { background: var(--pill-bg); color: var(--text-muted); border: 1px solid var(--border); }
+  .chip:not(.active):active { background: var(--surface2); }
+
+  /* dApp list */
+  .dapp-list { padding: 0 16px; }
+  .dapp-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: opacity 0.1s;
+  }
+  .dapp-item:last-child { border-bottom: none; }
+  .dapp-item:active { opacity: 0.7; }
+  .dapp-logo {
+    width: 46px; height: 46px;
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    font-size: 22px;
+    overflow: hidden;
+  }
+  .dapp-info { flex: 1; }
+  .dapp-name { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+  .dapp-desc { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
+  .dapp-arrow { color: var(--text-dim); font-size: 18px; }
+
+  /* ========================
+     SWAP CONFIRMATION SCREEN
+  ======================== */
+  /* ── Universal page header ── */
+  .page-header {
+    display: grid;
+    grid-template-columns: 44px 1fr 44px;
+    align-items: center;
+    padding: 8px 16px 12px;
+  }
+  .page-header-title {
+    text-align: center;
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .back-btn {
+    width: 44px; height: 44px;
+    display: flex; align-items: center; justify-content: center;
+    background: none; border: none; border-radius: 0;
+    cursor: pointer; color: var(--text);
+    justify-self: start; padding: 0;
+    transition: opacity 0.15s;
+  }
+  .back-btn:active { opacity: 0.45; }
+  .header-action {
+    width: 44px; height: 44px;
+    display: flex; align-items: center; justify-content: center;
+    background: none; border: none; border-radius: 0;
+    cursor: pointer; color: var(--text-muted);
+    justify-self: end; padding: 0;
+    transition: opacity 0.15s;
+  }
+  .header-action:active { opacity: 0.45; }
+  .header-spacer { width: 44px; height: 44px; }
+
+  /* ── Swap Calculator ── */
+  .swap-calc-tabs { display: flex; background: rgba(255,255,255,0.07); border-radius: 24px; padding: 4px; margin: 0 16px 28px; }
+  .swap-calc-tab { flex: 1; padding: 8px 0; border-radius: 20px; text-align: center; font-size: 14px; font-weight: 600; color: var(--text-muted); cursor: pointer; transition: all 0.2s; }
+  .swap-calc-tab.active { background: var(--purple); color: white; }
+  .swap-calc-amount-area { padding: 0 24px 6px; }
+  .swap-calc-big { display: flex; align-items: center; gap: 10px; }
+  .swap-calc-number { font-size: 52px; font-weight: 700; color: var(--text); line-height: 1; }
+  .swap-calc-cursor { width: 3px; height: 50px; background: var(--purple); border-radius: 2px; animation: cur-blink 1s step-end infinite; }
+  @keyframes cur-blink { 0%,100%{opacity:1} 50%{opacity:0} }
+  .swap-calc-token-name { font-size: 40px; font-weight: 700; color: rgba(255,255,255,0.3); line-height: 1; }
+  .swap-calc-equiv { font-size: 14px; color: var(--purple); font-weight: 600; padding: 6px 24px 24px; display: flex; align-items: center; gap: 5px; }
+  .swap-routes-card { margin: 0 16px 20px; background: var(--surface); border-radius: 16px; border: 1px solid var(--border); overflow: visible; position: relative; }
+  .swap-route-row { display: flex; align-items: center; padding: 14px 16px; gap: 12px; cursor: pointer; }
+  .swap-route-row:first-child { border-bottom: 1px solid var(--border); }
+  .swap-route-icon-wrap { position: relative; width: 40px; height: 40px; flex-shrink: 0; }
+  .swap-route-icon-wrap img.main { width: 40px; height: 40px; border-radius: 50%; }
+  .swap-route-net-badge { position: absolute; bottom: -2px; right: -2px; width: 17px; height: 17px; border-radius: 50%; border: 2px solid var(--surface); overflow: hidden; background: #1a1a2e; display: flex; align-items: center; justify-content: center; }
+  .swap-route-net-badge img { width: 13px; height: 13px; border-radius: 50%; object-fit: cover; }
+  .swap-route-info { flex: 1; min-width: 0; }
+  .swap-route-label { font-size: 11px; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 2px; }
+  .swap-route-name { font-size: 15px; font-weight: 700; color: var(--text); }
+  .swap-route-network { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+  .swap-route-chevron { color: var(--text-dim); font-size: 20px; flex-shrink: 0; }
+  .swap-route-flip {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    width: 32px; height: 32px; background: var(--surface2); border: 2px solid var(--bg);
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; z-index: 3; color: var(--text-muted);
+  }
+  .numpad { display: grid; grid-template-columns: 1fr 1fr 1fr; }
+  .num-key { padding: 17px 0; text-align: center; font-size: 24px; font-weight: 400; color: var(--text); cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent; transition: background 0.1s; }
+  .num-key:active { background: rgba(255,255,255,0.06); }
+  .num-key svg { width: 22px; height: 22px; stroke: var(--text-muted); fill: none; stroke-width: 2; stroke-linecap: round; }
+
+  .swap-visual {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 24px 24px;
+    gap: 0;
+  }
+  .swap-token-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    padding: 16px 0;
+  }
+  .swap-token-icon {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px;
+    flex-shrink: 0;
+  }
+  .swap-token-info { flex: 1; }
+  .swap-token-label { font-size: 13px; color: var(--text-muted); margin-bottom: 4px; }
+  .swap-token-amount { font-size: 26px; font-weight: 700; color: var(--text); }
+  .swap-token-amount span { font-size: 16px; color: var(--text-muted); }
+
+  .swap-arrow-container {
+    width: 36px; height: 36px;
+    background: var(--surface2);
+    border: 2px solid var(--bg);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-muted);
+    font-size: 16px;
+    z-index: 1;
+    margin: -2px 0;
+  }
+  .swap-divider { width: 100%; height: 1px; background: var(--border); }
+
+  /* Details card */
+  .details-card {
+    margin: 0 16px 16px;
+    background: var(--surface);
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 13px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .detail-row:last-child { border-bottom: none; }
+  .detail-label { font-size: 13px; color: var(--text-muted); }
+  .detail-value { font-size: 13px; color: var(--text); font-weight: 500; text-align: right; white-space: nowrap; }
+  .detail-value.update-badge {
+    background: rgba(124,58,237,0.2);
+    color: var(--purple-light);
+    border-radius: 8px;
+    padding: 2px 8px;
+    font-size: 11px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .network-badge {
+    margin: 0 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .network-badge-dot { width: 8px; height: 8px; background: var(--purple-light); border-radius: 50%; }
+
+  .confirm-btn {
+    margin: 0 16px 20px;
+    background: var(--purple);
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    padding: 18px;
+    border-radius: 16px;
+    text-align: center;
+    cursor: pointer;
+    border: none;
+    width: calc(100% - 32px);
+    transition: background 0.15s, transform 0.1s;
+    letter-spacing: 0.2px;
+  }
+  .confirm-btn:active { background: #6D28D9; transform: scale(0.98); }
+
+  /* ========================
+     SEND SCREEN
+  ======================== */
+
+  .send-body { padding: 20px 16px; }
+  .send-label { font-size: 13px; color: var(--text-muted); margin-bottom: 8px; }
+  .send-input {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 16px;
+    font-size: 15px;
+    color: var(--text);
+    width: 100%;
+    margin-bottom: 16px;
+    outline: none;
+    font-family: inherit;
+  }
+  .send-input::placeholder { color: var(--text-dim); }
+  .send-input:focus { border-color: var(--purple); }
+
+  .amount-input-container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .amount-input {
+    flex: 1;
+    background: none;
+    border: none;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+    outline: none;
+    font-family: inherit;
+    width: 100%;
+  }
+  .amount-input::placeholder { color: var(--text-dim); font-weight: 400; font-size: 16px; }
+  .max-btn {
+    background: rgba(124,58,237,0.2);
+    color: var(--purple-light);
+    border: none;
+    border-radius: 8px;
+    padding: 5px 10px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  .token-selector {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    margin-bottom: 24px;
+  }
+  .token-selector-name { font-size: 15px; font-weight: 600; color: var(--text); flex: 1; }
+  .token-selector-chevron { color: var(--text-muted); }
+
+  .send-action-btn {
+    background: var(--purple);
+    color: white;
+    font-size: 16px;
+    font-weight: 700;
+    padding: 18px;
+    border-radius: 16px;
+    text-align: center;
+    cursor: pointer;
+    border: none;
+    width: 100%;
+    font-family: inherit;
+    transition: background 0.15s, transform 0.1s;
+  }
+  .send-action-btn:active { background: #6D28D9; transform: scale(0.98); }
+  .send-action-btn:disabled { background: var(--surface3); color: var(--text-dim); cursor: not-allowed; }
+
+  /* ========================
+     ACTIVITY SCREEN
+  ======================== */
+  #screen-activity .activity-header {
+    background: transparent;
+    padding: 0 24px 20px;
+  }
+  .activity-title-bar { font-size: 28px; font-weight: 700; color: var(--text); padding-top: 4px; }
+
+  .activity-list { padding: 0 16px; }
+  .activity-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+  }
+  .activity-item:last-child { border-bottom: none; }
+  .activity-icon {
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  .activity-icon.send { background: rgba(248,113,113,0.15); }
+  .activity-icon.receive { background: rgba(34,197,94,0.15); }
+  .activity-icon.swap { background: rgba(124,58,237,0.15); }
+  .activity-info { flex: 1; }
+  .activity-name { font-size: 14px; font-weight: 600; color: var(--text); }
+  .activity-date { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .activity-amount { text-align: right; }
+  .activity-val { font-size: 14px; font-weight: 600; }
+  .activity-val.out { color: #F87171; }
+  .activity-val.in { color: var(--green); }
+  .activity-usd { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+  /* ========================
+     SUCCESS SCREEN
+  ======================== */
+  #screen-success {
+    height: 100%;
+  }
+  .success-circle {
+    width: 96px; height: 96px;
+    background: transparent;
+    border: 2.5px solid var(--purple);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 28px;
+    animation: pulse-success 0.5s ease;
+  }
+  @keyframes pulse-success {
+    0% { transform: scale(0.6); opacity: 0; }
+    60% { transform: scale(1.1); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .success-title { font-size: 26px; font-weight: 700; color: var(--text); margin-bottom: 10px; }
+  .success-desc { font-size: 15px; color: var(--text-muted); line-height: 1.6; margin-bottom: 32px; }
+  .success-amount { font-size: 36px; font-weight: 700; color: var(--purple-light); margin-bottom: 6px; }
+  .success-sub { font-size: 15px; color: var(--text-muted); margin-bottom: 32px; }
+  .success-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: 15px;
+    font-weight: 600;
+    padding: 16px 32px;
+    border-radius: 14px;
+    cursor: pointer;
+    border: none;
+    font-family: inherit;
+    transition: background 0.15s;
+    width: 100%;
+  }
+  .success-btn:active { background: var(--surface3); }
+
+  /* Deposit screen */
+  #screen-deposit .deposit-body { padding: 20px 16px; }
+  .deposit-methods { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
+  .deposit-method {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .deposit-method:active { background: var(--surface2); border-color: var(--purple); }
+  .deposit-method-icon {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+  .deposit-method-info { flex: 1; }
+  .deposit-method-name { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 3px; }
+  .deposit-method-desc { font-size: 12px; color: var(--text-muted); }
+  .deposit-method-arrow { color: var(--text-dim); font-size: 18px; }
+
+  .qr-container {
+    background: white;
+    border-radius: 16px;
+    padding: 20px;
+    margin: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .qr-placeholder {
+    width: 160px; height: 160px;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 160'%3E%3Crect width='160' height='160' fill='white'/%3E%3Crect x='10' y='10' width='60' height='60' fill='%23000' rx='4'/%3E%3Crect x='20' y='20' width='40' height='40' fill='white' rx='2'/%3E%3Crect x='28' y='28' width='24' height='24' fill='%23000' rx='1'/%3E%3Crect x='90' y='10' width='60' height='60' fill='%23000' rx='4'/%3E%3Crect x='100' y='20' width='40' height='40' fill='white' rx='2'/%3E%3Crect x='108' y='28' width='24' height='24' fill='%23000' rx='1'/%3E%3Crect x='10' y='90' width='60' height='60' fill='%23000' rx='4'/%3E%3Crect x='20' y='100' width='40' height='40' fill='white' rx='2'/%3E%3Crect x='28' y='108' width='24' height='24' fill='%23000' rx='1'/%3E%3Crect x='90' y='90' width='14' height='14' fill='%23000'/%3E%3Crect x='108' y='90' width='14' height='14' fill='%23000'/%3E%3Crect x='90' y='108' width='14' height='14' fill='%23000'/%3E%3Crect x='108' y='108' width='14' height='14' fill='%23000'/%3E%3Crect x='126' y='90' width='14' height='14' fill='%23000'/%3E%3Crect x='126' y='108' width='14' height='14' fill='%23000'/%3E%3Crect x='90' y='126' width='14' height='14' fill='%23000'/%3E%3Crect x='126' y='126' width='14' height='14' fill='%23000'/%3E%3C/svg%3E") center/contain no-repeat;
+  }
+  .qr-address {
+    font-size: 11px;
+    color: #333;
+    font-family: monospace;
+    word-break: break-all;
+    text-align: center;
+  }
+  .copy-address-btn {
+    background: var(--purple);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 14px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    width: calc(100% - 32px);
+    margin: 0 16px 20px;
+    font-family: inherit;
+    transition: background 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .copy-address-btn:active { background: #6D28D9; }
+
+  /* Scan screen */
+  #screen-scan {
+    background: #000;
+  }
+  .scan-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    z-index: 5;
+  }
+  .scan-frame {
+    width: 240px; height: 240px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-radius: 16px;
+    position: relative;
+    margin-bottom: 32px;
+  }
+  .scan-corner {
+    position: absolute;
+    width: 28px; height: 28px;
+    border-color: white;
+    border-style: solid;
+  }
+  .scan-corner.tl { top: -2px; left: -2px; border-width: 3px 0 0 3px; border-radius: 4px 0 0 0; }
+  .scan-corner.tr { top: -2px; right: -2px; border-width: 3px 3px 0 0; border-radius: 0 4px 0 0; }
+  .scan-corner.bl { bottom: -2px; left: -2px; border-width: 0 0 3px 3px; border-radius: 0 0 0 4px; }
+  .scan-corner.br { bottom: -2px; right: -2px; border-width: 0 3px 3px 0; border-radius: 0 0 4px 0; }
+  .scan-line {
+    position: absolute;
+    top: 20px; left: 4px; right: 4px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--green), transparent);
+    animation: scan 2s linear infinite;
+  }
+  @keyframes scan {
+    0% { top: 20px; }
+    100% { top: calc(100% - 22px); }
+  }
+  .scan-hint { font-size: 14px; color: rgba(255,255,255,0.7); text-align: center; }
+  .scan-bg-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+  }
+  .scan-camera-area {
+    position: absolute;
+    inset: 0;
+    background: #111;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 80px;
+    opacity: 0.3;
+  }
+
+  /* Notification toast */
+  .toast {
+    position: absolute;
+    bottom: 110px;
+    left: 16px;
+    right: 16px;
+    background: var(--surface3);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 16px;
+    font-size: 14px;
+    color: var(--text);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.2s, transform 0.2s;
+    pointer-events: none;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Slide-up modal */
+  .modal-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 50;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+  }
+  .modal-overlay.show {
+    opacity: 1;
+    pointer-events: all;
+  }
+  .modal-sheet {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: #181830;
+    border-radius: 24px 24px 0 0;
+    padding: 12px 16px 32px;
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    z-index: 51;
+  }
+  .modal-overlay.show .modal-sheet {
+    transform: translateY(0);
+  }
+  .modal-handle {
+    width: 36px; height: 4px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 2px;
+    margin: 0 auto 20px;
+  }
+  .modal-title { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 16px; }
+  .network-option {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 12px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .network-option:active { background: var(--surface2); }
+  .network-option-icon { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .network-option-name { font-size: 15px; font-weight: 600; color: var(--text); flex: 1; }
+  .network-check { color: var(--green); font-size: 18px; }
+
+  /* ========================
+     ROLLING NUMBERS
+  ======================== */
+  .balance-roll {
+    display: inline-flex;
+    align-items: center;
+    font-size: 38px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -1px;
+    line-height: 1;
+  }
+  .roll-col {
+    height: 46px;
+    overflow: hidden;
+    display: inline-block;
+  }
+  .roll-strip {
+    display: flex;
+    flex-direction: column;
+    will-change: transform;
+    transform: translateY(0);
+  }
+  .roll-strip.animate {
+    transition: transform 1.4s cubic-bezier(0.23, 1, 0.32, 1);
+  }
+  .roll-strip span {
+    display: block;
+    height: 46px;
+    line-height: 46px;
+    text-align: center;
+  }
+  .roll-static {
+    display: inline-block;
+    height: 46px;
+    line-height: 46px;
+    font-size: 38px;
+  }
+
+  /* ========================
+     ENTRANCE ANIMATIONS
+  ======================== */
+  @keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeSlideDown {
+    from { opacity: 0; transform: translateY(-12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.75); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  .a-slide-up  { animation: fadeSlideUp  0.5s cubic-bezier(0.23,1,0.32,1) both; }
+  .a-slide-dn  { animation: fadeSlideDown 0.45s cubic-bezier(0.23,1,0.32,1) both; }
+  .a-scale     { animation: scaleIn 0.45s cubic-bezier(0.34,1.56,0.64,1) both; }
+  .a-fade      { animation: fadeIn 0.4s ease both; }
+
+  /* Screen transitions */
+  .screen { transition: opacity 0.25s ease, transform 0.25s ease; }
+  .screen:not(.active) { transform: translateY(6px); }
+  .screen.active { transform: translateY(0); }
+
+  /* Smooth all interactive items */
+  .token-item  { transition: opacity 0.15s, background 0.15s; }
+  .token-item:active { background: rgba(255,255,255,0.03); }
+  .dapp-item   { transition: opacity 0.15s, background 0.15s; }
+  .banner      { transition: background 0.2s; }
+  .banner:active { background: rgba(255,255,255,0.07); }
+
+</style>
+</head>
+<body>
+
+<div class="phone">
+
+  <!-- ===========================
+       TOAST
+  =========================== -->
+  <div class="toast" id="toast">
+    <span id="toast-icon">✅</span>
+    <span id="toast-text">Copiado!</span>
+  </div>
+
+  <!-- ===========================
+       NETWORK MODAL
+  =========================== -->
+  <div class="modal-overlay" id="network-modal" onclick="closeNetworkModal(event)">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-title">Select network</div>
+      <div class="network-option" onclick="selectNetwork('All networks')">
+        <div class="network-option-icon" style="background:rgba(139,111,224,0.12)">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+            <defs><linearGradient id="gng-m" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#8247E5"/><stop offset="55%" stop-color="#627EEA"/><stop offset="100%" stop-color="#28A0F0"/></linearGradient></defs>
+            <circle cx="12" cy="12" r="10" stroke="url(#gng-m)"/>
+            <ellipse cx="12" cy="12" rx="4" ry="10" stroke="url(#gng-m)"/>
+            <line x1="2" y1="12" x2="22" y2="12" stroke="url(#gng-m)"/>
+            <path d="M3.5 7.5 Q12 10 20.5 7.5" stroke="url(#gng-m)"/>
+            <path d="M3.5 16.5 Q12 14 20.5 16.5" stroke="url(#gng-m)"/>
+          </svg>
+        </div>
+        <div class="network-option-name">All networks</div>
+        <span class="network-check" id="check-allnetworks" style="opacity:0">✓</span>
+      </div>
+      <div class="network-option" onclick="selectNetwork('Polygon')">
+        <div class="network-option-icon" style="background: rgba(130,71,229,0.15)"><img src="https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons/svg/color/matic.svg" style="width:28px;height:28px;border-radius:50%;"></div>
+        <div class="network-option-name">Polygon</div>
+        <span class="network-check" id="check-polygon">✓</span>
+      </div>
+      <div class="network-option" onclick="selectNetwork('Ethereum')">
+        <div class="network-option-icon" style="background: rgba(98,126,234,0.15)"><img src="https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons/svg/color/eth.svg" style="width:28px;height:28px;border-radius:50%;"></div>
+        <div class="network-option-name">Ethereum</div>
+        <span class="network-check" id="check-ethereum" style="opacity:0">✓</span>
+      </div>
+      <div class="network-option" onclick="selectNetwork('BNB Chain')">
+        <div class="network-option-icon" style="background: rgba(240,185,11,0.15)"><img src="https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons/svg/color/bnb.svg" style="width:28px;height:28px;border-radius:50%;"></div>
+        <div class="network-option-name">BNB Chain</div>
+        <span class="network-check" id="check-bnb" style="opacity:0">✓</span>
+      </div>
+      <div class="network-option" onclick="selectNetwork('Arbitrum')">
+        <div class="network-option-icon" style="background: rgba(40,160,240,0.15)"><img src="https://assets.coingecko.com/coins/images/16547/small/photo_2023-03-29_21.47.00.jpeg" style="width:28px;height:28px;border-radius:50%;"></div>
+        <div class="network-option-name">Arbitrum</div>
+        <span class="network-check" id="check-arbitrum" style="opacity:0">✓</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===========================
+       HOME SCREEN
+  =========================== -->
+  <div class="screen active" id="screen-home">
+    <!-- Status bar -->
+    <div class="status-bar" style="position:relative;z-index:10;">
+      <span>12:30</span>
+      <div class="status-icons">
+        <svg viewBox="0 0 24 24"><path d="M1.5 8.5C5.5 4.5 10.5 2.5 12 2.5s6.5 2 10.5 6"/><path d="M5 12c1.9-2 4.5-3.2 7-3.2s5.1 1.2 7 3.2"/><path d="M8.5 15.5c.9-1 2.1-1.6 3.5-1.6s2.6.6 3.5 1.6"/><circle cx="12" cy="19" r="1.5" fill="white"/></svg>
+        <svg viewBox="0 0 24 24"><rect x="2" y="7" width="14" height="10" rx="2" stroke="white" stroke-width="1.5" fill="none"/><path d="M16 10h3a1 1 0 011 1v2a1 1 0 01-1 1h-3" stroke="white" stroke-width="1.5" fill="none"/><rect x="3" y="8" width="10" height="8" rx="1" fill="white"/></svg>
+      </div>
+    </div>
+
+    <div class="scroll-content">
+      <div class="header-bg">
+        <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:20px;">
+          <div class="network-pill" style="margin:0;" onclick="openNetworkModal()">
+            <div class="network-dot"><img id="network-dot-img" src="https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons/svg/color/matic.svg"></div>
+            <span id="network-name">Polygon</span>
+            <span class="network-chevron">▾</span>
+          </div>
+          <div class="address-pill" style="margin:0;" onclick="copyAddress()">
+            <svg viewBox="0 0 24 24" style="stroke:var(--text-muted);fill:none;stroke-width:2;width:14px;height:14px;stroke-linecap:round;stroke-linejoin:round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            0x...a5
+          </div>
+        </div>
+        <div class="balance-section">
+          <div class="balance-label">Total balance</div>
+          <div style="display:flex;align-items:center;justify-content:center;gap:12px;">
+            <div id="balance-display" style="display:inline-flex;align-items:center;gap:8px;">
+              <div class="balance-roll" id="rolling-number"></div>
+              <span style="font-size:22px;color:var(--text-muted);font-weight:700;">USD</span>
+            </div>
+            <button onclick="toggleBalance()" id="eye-btn" style="background:none;border:none;cursor:pointer;padding:4px;color:var(--text-muted);display:flex;align-items:center;margin-top:4px;">
+              <svg id="eye-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+              <svg id="eye-off-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
+                <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/>
+                <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/>
+                <line x1="1" y1="1" x2="23" y2="23"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="quick-actions">
+          <button class="action-btn" onclick="goTo('screen-deposit')">
+            <div class="action-icon">
+              <svg viewBox="0 0 24 24"><path d="M12 2v14M5 9l7 7 7-7"/><path d="M3 20h18"/></svg>
+            </div>
+            <span class="action-label">Deposit</span>
+          </button>
+          <button class="action-btn" onclick="goTo('screen-send')">
+            <div class="action-icon">
+              <svg viewBox="0 0 24 24"><path d="M12 22V8M5 15l7-7 7 7"/><path d="M3 4h18"/></svg>
+            </div>
+            <span class="action-label">Send</span>
+          </button>
+          <button class="action-btn" onclick="goTo('screen-swap')">
+            <div class="action-icon">
+              <svg viewBox="0 0 24 24"><path d="M7 16l-4-4 4-4"/><path d="M3 12h18"/><path d="M17 8l4 4-4 4"/></svg>
+            </div>
+            <span class="action-label">Swap</span>
+          </button>
+          <button class="action-btn" onclick="goTo('screen-scan')">
+            <div class="action-icon">
+              <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="3" height="3"/><rect x="19" y="14" width="2" height="2"/><rect x="14" y="19" width="2" height="2"/><rect x="19" y="19" width="2" height="2"/></svg>
+            </div>
+            <span class="action-label">Scan</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="banner">
+        <div class="banner-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12l2.5 2.5L16 9"/></svg>
+        </div>
+        <span class="banner-text">Switch to Bitso wallet</span>
+        <span class="banner-arrow">›</span>
+      </div>
+
+      <div class="tabs">
+        <div class="tab active" onclick="switchTab('tokens', this)">Tokens</div>
+        <div class="tab" onclick="switchTab('nfts', this)">NFTs</div>
+      </div>
+
+      <div class="token-list" id="tab-tokens">
+      </div>
+
+      <!-- All-networks token list (shown only when "All networks" is selected) -->
+      <div class="token-list" id="tab-tokens-all" style="display:none;">
+        <div class="token-item">
+          <div class="token-icon">
+            <img src="https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons/svg/color/eth.svg">
+            <div class="token-network-badge"><img src="https://assets.coingecko.com/coins/images/16547/small/photo_2023-03-29_21.47.00.jpeg"></div>
+          </div>
+          <div class="token-info"><div class="token-name">Ethereum</div><div class="token-sub">ETH · Arbitrum</div></div>
+          <div class="token-values">
+            <div class="token-amount">$1,782.83</div>
+            <div class="token-change positive"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>3.96%</div>
+          </div>
+        </div>
+        <div class="token-item">
+          <div class="token-icon">
+            <img src="https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons/svg/color/eth.svg">
+            <div class="token-network-badge"><img src="https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons/svg/color/eth.svg"></div>
+          </div>
+          <div class="token-info"><div class="token-name">Ethereum</div><div class="token-sub">ETH · Ethereum</div></div>
+          <div class="token-values">
+            <div class="token-amount">$593.24</div>
+            <div class="token-change positive"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>3.96%</div>
+          </div>
+        </div>
+        <div class="token-item">
+          <div class="token-icon">
+            <img src="https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons/svg/color/bnb.svg">
+            <div class="token-network-badge"><img src="https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons/svg/color/bnb.svg"></div>
+          </div>
+          <div class="token-info"><div class="token-name">BNB</div><div class="token-sub">BNB · BNB Chain</div></div>
+          <div class="token-values">
+            <div class="token-amount">$306.23</div>
+            <div class="token-change positive"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>0.87%</div>
+          </div>
+        </div>
+        <div class="token-item">
+          <div class="token-icon">
+            <img src="https://assets.coingecko.com/coins/images/4128/small/solana.png">
+            <div class="token-network-badge"><img src="https://assets.coingecko.com/coins/images/4128/small/solana.png"></div>
+          </div>
+          <div class="token-info"><div class="token-name">Solana</div><div class="token-sub">SOL · Solana</div></div>
+          <div class="token-values">
+            <div class="token-amount">$273.29</div>
+            <div class="token-change positive"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>6.78%</div>
+          </div>
+        </div>
+        <div class="token-item">
+          <div class="token-icon">
+            <img src="https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons/svg/color/matic.svg">
+            <div class="token-network-badge"><img src="https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons/svg/color/matic.svg"></div>
+          </div>
+          <div class="token-info"><div class="token-name">Polygon</div><div class="token-sub">MATIC · Polygon</div></div>
+          <div class="token-values">
+            <div class="token-amount">$164.00</div>
+            <div class="token-change negative"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>2.31%</div>
+          </div>
+        </div>
+        <div class="token-item">
+          <div class="token-icon">
+            <img src="https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons/svg/color/dai.svg">
+            <div class="token-network-badge"><img src="https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons/svg/color/matic.svg"></div>
+          </div>
+          <div class="token-info"><div class="token-name">DAI</div><div class="token-sub">DAI · Polygon</div></div>
+          <div class="token-values">
+            <div class="token-amount">$40.00</div>
+            <div class="token-change negative"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>0.02%</div>
+          </div>
+        </div>
+        <div class="token-item">
+          <div class="token-icon">
+            <img src="https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons/svg/color/usdc.svg">
+            <div class="token-network-badge"><img src="https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons/svg/color/eth.svg"></div>
+          </div>
+          <div class="token-info"><div class="token-name">USD Coin</div><div class="token-sub">USDC · Ethereum</div></div>
+          <div class="token-values">
+            <div class="token-amount">$36.76</div>
+            <div class="token-change positive"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>0.01%</div>
+          </div>
+        </div>
+        <div class="token-item">
+          <div class="token-icon">
+            <img src="https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons/svg/color/usdc.svg">
+            <div class="token-network-badge"><img src="https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons/svg/color/matic.svg"></div>
+          </div>
+          <div class="token-info"><div class="token-name">USD Coin</div><div class="token-sub">USDC · Polygon</div></div>
+          <div class="token-values">
+            <div class="token-amount">$28.00</div>
+            <div class="token-change positive"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>0.01%</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="tab-nfts" style="display:none;padding:12px 16px 24px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+
+          <div class="nft-card" onclick="openNft('Bored Ape #4281','BAYC','Ξ 68.5','https://api.dicebear.com/7.x/pixel-art/svg?seed=bayc4281&backgroundColor=f59e0b&backgroundType=solid','4281','20,000 unique crypto investors on the blockchain with commercial rights. One of the most iconic NFT collections in the Web3 ecosystem.')">
+            <div class="nft-img"><img src="https://api.dicebear.com/7.x/pixel-art/svg?seed=bayc4281&backgroundColor=f59e0b&backgroundType=solid" alt="Bored Ape #4281"></div>
+            <div class="nft-info"><div class="nft-name">Bored Ape #4281</div><div class="nft-col">BAYC</div><div class="nft-price">Ξ 68.5</div></div>
+          </div>
+
+          <div class="nft-card" onclick="openNft('CryptoPunk #7804','CryptoPunks','Ξ 4,200','https://www.larvalabs.com/public/images/cryptopunks/punk7804.png','7804','10,000 algorithmically generated pixel art characters. One of the first NFTs on Ethereum and a cornerstone of crypto culture.')">
+            <div class="nft-img" style="background:#638596;image-rendering:pixelated;"><img src="https://www.larvalabs.com/public/images/cryptopunks/punk7804.png" alt="CryptoPunk #7804" style="image-rendering:pixelated;"></div>
+            <div class="nft-info"><div class="nft-name">CryptoPunk #7804</div><div class="nft-col">CryptoPunks</div><div class="nft-price">Ξ 4,200</div></div>
+          </div>
+
+          <div class="nft-card" onclick="openNft('Azuki #8765','Azuki','Ξ 12.3','https://api.dicebear.com/7.x/adventurer/svg?seed=azuki8765&backgroundColor=f472b6&backgroundType=solid','8765','10,000 anime-inspired characters from a garden at the edge of the internet. Holders gain access to The Garden.')">
+            <div class="nft-img"><img src="https://api.dicebear.com/7.x/adventurer/svg?seed=azuki8765&backgroundColor=f472b6&backgroundType=solid" alt="Azuki #8765"></div>
+            <div class="nft-info"><div class="nft-name">Azuki #8765</div><div class="nft-col">Azuki</div><div class="nft-price">Ξ 12.3</div></div>
+          </div>
+
+          <div class="nft-card" onclick="openNft('Doodle #1234','Doodles','Ξ 5.8','https://api.dicebear.com/7.x/thumbs/svg?seed=doodle1234&backgroundColor=c4b5fd&backgroundType=solid','1234','10,000 hand-drawn characters with a unique, colorful style. A community-driven NFT project with a vibrant ecosystem.')">
+            <div class="nft-img"><img src="https://api.dicebear.com/7.x/thumbs/svg?seed=doodle1234&backgroundColor=c4b5fd&backgroundType=solid" alt="Doodle #1234"></div>
+            <div class="nft-info"><div class="nft-name">Doodle #1234</div><div class="nft-col">Doodles</div><div class="nft-price">Ξ 5.8</div></div>
+          </div>
+
+          <div class="nft-card" onclick="openNft('CloneX #9876','CloneX','Ξ 3.1','https://api.dicebear.com/7.x/bottts/svg?seed=clonex9876&backgroundColor=312e81&backgroundType=solid','9876','20,000 3D avatar NFTs created in collaboration with RTFKT and Takashi Murakami. The future of digital identity.')">
+            <div class="nft-img"><img src="https://api.dicebear.com/7.x/bottts/svg?seed=clonex9876&backgroundColor=312e81&backgroundType=solid" alt="CloneX #9876"></div>
+            <div class="nft-info"><div class="nft-name">CloneX #9876</div><div class="nft-col">CloneX</div><div class="nft-price">Ξ 3.1</div></div>
+          </div>
+
+          <div class="nft-card" onclick="openNft('Moonbird #3421','Moonbirds','Ξ 7.2','https://api.dicebear.com/7.x/lorelei/svg?seed=moonbird3421&backgroundColor=065f46&backgroundType=solid','3421','10,000 utility-enabled PFP NFTs from PROOF Collective. Holders unlock nesting powers and exclusive community benefits.')">
+            <div class="nft-img"><img src="https://api.dicebear.com/7.x/lorelei/svg?seed=moonbird3421&backgroundColor=065f46&backgroundType=solid" alt="Moonbird #3421"></div>
+            <div class="nft-info"><div class="nft-name">Moonbird #3421</div><div class="nft-col">Moonbirds</div><div class="nft-price">Ξ 7.2</div></div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="bottom-nav">
+      <button class="nav-item active" onclick="goTo('screen-home');setActiveNav(this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="9" height="9" rx="1"/><rect x="13" y="3" width="9" height="9" rx="1"/><rect x="2" y="14" width="9" height="8" rx="1"/><rect x="13" y="14" width="9" height="8" rx="1"/></svg>
+        Web3 Wallet
+      </button>
+      <button class="nav-item" onclick="goTo('screen-dapps');setActiveNav(this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+        dApps
+      </button>
+      <button class="nav-item" onclick="goTo('screen-activity');setActiveNav(this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><line x1="8" y1="9" x2="10" y2="9"/></svg>
+        Activity
+      </button>
+    </div>
+  </div>
+
+  <!-- ===========================
+       DAPPS SCREEN
+  =========================== -->
+  <div class="screen" id="screen-dapps">
+    <div class="status-bar" style="position:relative;z-index:10;">
+      <span>12:30</span>
+      <div class="status-icons">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="white"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4" fill="#3D1A7A"/></svg>
+        <svg viewBox="0 0 24 24" width="16" height="16"><rect x="2" y="7" width="14" height="10" rx="2" stroke="white" stroke-width="1.5" fill="none"/><rect x="3" y="8" width="10" height="8" rx="1" fill="white"/></svg>
+      </div>
+    </div>
+
+    <div class="scroll-content">
+      <div class="dapps-header">
+        <div class="page-title">dApps</div>
+        <div class="dapps-title">Top dApps</div>
+        <div class="dapps-desc">Explore and connect to the safest dApps to make transactions in the Web3.</div>
+      </div>
+
+      <div class="filter-chips">
+        <button class="chip active" onclick="filterDapps('all', this)">All</button>
+        <button class="chip" onclick="filterDapps('nfts', this)">NFTs</button>
+        <button class="chip" onclick="filterDapps('staking', this)">Staking</button>
+        <button class="chip" onclick="filterDapps('swaps', this)">Swaps</button>
+        <button class="chip" onclick="filterDapps('yield', this)">Yield</button>
+        <button class="chip" onclick="filterDapps('defi', this)">DeFi</button>
+      </div>
+
+      <div class="dapp-list">
+        <div class="dapp-item" data-cat="nfts" onclick="showToast('🔗', 'Abrindo OpenSea...')">
+          <div class="dapp-logo" style="background:#1568EC">🌊</div>
+          <div class="dapp-info">
+            <div class="dapp-name">OpenSea</div>
+            <div class="dapp-desc">The largest NFT marketplace</div>
+          </div>
+          <span class="dapp-arrow">›</span>
+        </div>
+        <div class="dapp-item" data-cat="nfts" onclick="showToast('🔗', 'Abrindo Rarible...')">
+          <div class="dapp-logo" style="background:#FEDA03;display:flex;align-items:center;justify-content:center;">
+            <span style="font-size:22px;filter:none;">🅡</span>
+          </div>
+          <div class="dapp-info">
+            <div class="dapp-name">Rarible</div>
+            <div class="dapp-desc">Aggregated NFT marketplace with rewards</div>
+          </div>
+          <span class="dapp-arrow">›</span>
+        </div>
+        <div class="dapp-item" data-cat="staking" onclick="showToast('🔗', 'Abrindo RocketPool...')">
+          <div class="dapp-logo" style="background:linear-gradient(135deg,#F0771A,#E55B1A)">🚀</div>
+          <div class="dapp-info">
+            <div class="dapp-name">RocketPool</div>
+            <div class="dapp-desc">Decentralized Ethereum staking protocol</div>
+          </div>
+          <span class="dapp-arrow">›</span>
+        </div>
+        <div class="dapp-item" data-cat="staking" onclick="showToast('🔗', 'Abrindo Lido...')">
+          <div class="dapp-logo" style="background:linear-gradient(135deg,#00A3FF,#0075B8)">💧</div>
+          <div class="dapp-info">
+            <div class="dapp-name">Lido</div>
+            <div class="dapp-desc">Liquid Staking for Digital Tokens</div>
+          </div>
+          <span class="dapp-arrow">›</span>
+        </div>
+        <div class="dapp-item" data-cat="defi" onclick="showToast('🔗', 'Abrindo MakerDAO...')">
+          <div class="dapp-logo" style="background:linear-gradient(135deg,#1AAB9B,#0D7A6E)">🏛️</div>
+          <div class="dapp-info">
+            <div class="dapp-name">MakerDAO</div>
+            <div class="dapp-desc">Deposit volatile ETH, borrow stable DAI, and do many</div>
+          </div>
+          <span class="dapp-arrow">›</span>
+        </div>
+        <div class="dapp-item" data-cat="defi yield" onclick="showToast('🔗', 'Abrindo Aave...')">
+          <div class="dapp-logo" style="background:linear-gradient(135deg,#B6509E,#2EBAC6)">👻</div>
+          <div class="dapp-info">
+            <div class="dapp-name">Aave</div>
+            <div class="dapp-desc">Open source liquidity protocol</div>
+          </div>
+          <span class="dapp-arrow">›</span>
+        </div>
+        <div class="dapp-item" data-cat="swaps" onclick="showToast('🔗', 'Abrindo Uniswap...')">
+          <div class="dapp-logo" style="background:linear-gradient(135deg,#FF007A,#CC0062)">🦄</div>
+          <div class="dapp-info">
+            <div class="dapp-name">Uniswap</div>
+            <div class="dapp-desc">Decentralized trading protocol</div>
+          </div>
+          <span class="dapp-arrow">›</span>
+        </div>
+        <div class="dapp-item" data-cat="swaps defi" onclick="showToast('🔗', 'Abrindo Curve...')">
+          <div class="dapp-logo" style="background:linear-gradient(135deg,#FF0000,#CC0000)">📈</div>
+          <div class="dapp-info">
+            <div class="dapp-name">Curve Finance</div>
+            <div class="dapp-desc">Exchange for stablecoins and crypto assets</div>
+          </div>
+          <span class="dapp-arrow">›</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="bottom-nav">
+      <button class="nav-item" onclick="goTo('screen-home');setActiveNav(this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="9" height="9" rx="1"/><rect x="13" y="3" width="9" height="9" rx="1"/><rect x="2" y="14" width="9" height="8" rx="1"/><rect x="13" y="14" width="9" height="8" rx="1"/></svg>
+        Web3 Wallet
+      </button>
+      <button class="nav-item active" onclick="goTo('screen-dapps');setActiveNav(this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+        dApps
+      </button>
+      <button class="nav-item" onclick="goTo('screen-activity');setActiveNav(this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><line x1="8" y1="9" x2="10" y2="9"/></svg>
+        Activity
+      </button>
+    </div>
+  </div>
+
+  <!-- ===========================
+       SWAP CONFIRMATION SCREEN
+  =========================== -->
+  <!-- ===========================
+       SWAP CALCULATOR SCREEN
+  =========================== -->
+  <div class="screen" id="screen-swap">
+    <div class="status-bar"><span>12:30</span><div class="status-icons"><svg viewBox="0 0 24 24" width="16" height="16"><rect x="2" y="7" width="14" height="10" rx="2" stroke="white" stroke-width="1.5" fill="none"/><rect x="3" y="8" width="10" height="8" rx="1" fill="white"/></svg></div></div>
+
+    <div style="display:flex;flex-direction:column;height:calc(100% - 44px);">
+      <!-- Header -->
+      <div class="page-header">
+        <button class="back-btn" onclick="goBack()"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+        <span class="page-header-title">Swap</span>
+        <div class="header-action"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="swap-calc-tabs">
+        <div class="swap-calc-tab active">Swap</div>
+        <div class="swap-calc-tab" onclick="showToast('⚡','Limit orders coming soon')">Limit</div>
+        <div class="swap-calc-tab" onclick="showToast('⚡','DCA coming soon')">DCA</div>
+      </div>
+
+      <!-- Amount display -->
+      <div class="swap-calc-amount-area">
+        <div class="swap-calc-big">
+          <span class="swap-calc-number" id="swap-calc-amount">100</span>
+          <div class="swap-calc-cursor"></div>
+          <span class="swap-calc-token-name">MATIC</span>
+        </div>
+      </div>
+      <div class="swap-calc-equiv">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M7 16V4m0 0L3 8m4-4l4 4"/><path d="M17 8v12m0 0l4-4m-4 4l-4-4"/></svg>
+        <span id="swap-calc-equiv">≈ 40.12 APE</span>
+      </div>
+
+      <!-- From / To rows -->
+      <div class="swap-routes-card">
+        <div class="swap-route-row">
+          <div class="swap-route-icon-wrap">
+            <img class="main" src="https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons/svg/color/matic.svg">
+            <div class="swap-route-net-badge"><img src="https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons/svg/color/matic.svg"></div>
+          </div>
+          <div class="swap-route-info">
+            <div class="swap-route-label">From</div>
+            <div class="swap-route-name">MATIC</div>
+            <div class="swap-route-network">Polygon network</div>
+          </div>
+          <span class="swap-route-chevron">›</span>
+        </div>
+
+        <div class="swap-route-flip">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 16V4m0 0L3 8m4-4l4 4"/><path d="M17 8v12m0 0l4-4m-4 4l-4-4"/></svg>
+        </div>
+
+        <div class="swap-route-row">
+          <div class="swap-route-icon-wrap">
+            <img class="main" src="https://assets.coingecko.com/coins/images/24383/small/apecoin.jpg" style="object-fit:cover;">
+            <div class="swap-route-net-badge"><img src="https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons/svg/color/eth.svg"></div>
+          </div>
+          <div class="swap-route-info">
+            <div class="swap-route-label">To</div>
+            <div class="swap-route-name">APE</div>
+            <div class="swap-route-network">Ethereum network</div>
+          </div>
+          <span class="swap-route-chevron">›</span>
+        </div>
+      </div>
+
+      <!-- Review button -->
+      <div style="padding: 0 16px 12px;">
+        <button class="send-action-btn" onclick="goTo('screen-confirm')" style="width:100%;font-size:16px;padding:16px;">Review order</button>
+      </div>
+
+      <!-- Numpad -->
+      <div class="numpad" id="swap-numpad">
+        <div class="num-key" onclick="numpadPress('1')">1</div>
+        <div class="num-key" onclick="numpadPress('2')">2</div>
+        <div class="num-key" onclick="numpadPress('3')">3</div>
+        <div class="num-key" onclick="numpadPress('4')">4</div>
+        <div class="num-key" onclick="numpadPress('5')">5</div>
+        <div class="num-key" onclick="numpadPress('6')">6</div>
+        <div class="num-key" onclick="numpadPress('7')">7</div>
+        <div class="num-key" onclick="numpadPress('8')">8</div>
+        <div class="num-key" onclick="numpadPress('9')">9</div>
+        <div class="num-key" onclick="numpadPress('.')">.</div>
+        <div class="num-key" onclick="numpadPress('0')">0</div>
+        <div class="num-key backspace" onclick="numpadPress('back')">
+          <svg viewBox="0 0 24 24"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/><line x1="18" y1="9" x2="12" y2="15"/><line x1="12" y1="9" x2="18" y2="15"/></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen" id="screen-confirm">
+    <div class="status-bar"><span>12:30</span><div class="status-icons"><svg viewBox="0 0 24 24" width="16" height="16"><rect x="2" y="7" width="14" height="10" rx="2" stroke="white" stroke-width="1.5" fill="none"/><rect x="3" y="8" width="10" height="8" rx="1" fill="white"/></svg></div></div>
+
+    <div class="scroll-content">
+      <div class="page-header">
+        <button class="back-btn" onclick="goBack()"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+        <span class="page-header-title">Confirmation</span>
+        <div class="header-action"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></div>
+      </div>
+
+      <div class="swap-visual">
+        <div class="swap-token-row">
+          <div class="swap-token-icon" style="background:transparent;overflow:hidden;"><img src="https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons/svg/color/matic.svg" style="width:52px;height:52px;border-radius:50%;"></div>
+          <div class="swap-token-info">
+            <div class="swap-token-label">You send</div>
+            <div class="swap-token-amount">100 <span>MATIC</span></div>
+          </div>
+        </div>
+        <div class="swap-divider"></div>
+        <div style="display:flex;justify-content:center;margin:-18px 0;z-index:2;position:relative;">
+          <div class="swap-arrow-container">↓</div>
+        </div>
+        <div class="swap-token-row">
+          <div class="swap-token-icon" style="background:transparent;overflow:hidden;"><img src="https://assets.coingecko.com/coins/images/24383/small/apecoin.jpg" style="width:52px;height:52px;border-radius:50%;object-fit:cover;"></div>
+          <div class="swap-token-info">
+            <div class="swap-token-label">You get</div>
+            <div class="swap-token-amount" style="font-size:20px;">35.877677 <span>APE</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="details-card">
+        <div class="detail-row">
+          <span class="detail-label">Conversion rate</span>
+          <span class="detail-value">MATIC = 0.40119649 APE</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Slippage tolerance</span>
+          <span class="detail-value">Max 2%</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Fee (Est.)</span>
+          <div style="text-align:right;">
+            <div class="detail-value">0.0012 MATIC <span style="color:var(--text-muted);font-weight:400;">≈ $0.0005 USD</span></div>
+            <div style="margin-top:4px;display:flex;justify-content:flex-end;">
+              <span class="detail-value update-badge">↻ &lt;20s&gt;</span>
+            </div>
+          </div>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Service fee</span>
+          <div style="text-align:right;">
+            <div class="detail-value">0.25 MATIC</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">≈ $0.10 USD</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="network-badge">
+        <div class="network-badge-dot"></div>
+        Polygon network transaction
+      </div>
+
+      <button class="confirm-btn" onclick="confirmSwap()">Confirm swap</button>
+    </div>
+  </div>
+
+  <!-- ===========================
+       SEND SCREEN
+  =========================== -->
+  <div class="screen" id="screen-send">
+    <div class="status-bar"><span>12:30</span><div class="status-icons"><svg viewBox="0 0 24 24" width="16" height="16"><rect x="2" y="7" width="14" height="10" rx="2" stroke="white" stroke-width="1.5" fill="none"/><rect x="3" y="8" width="10" height="8" rx="1" fill="white"/></svg></div></div>
+
+    <div class="scroll-content">
+      <div class="page-header">
+        <button class="back-btn" onclick="goBack()"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+        <span class="page-header-title">Send</span>
+        <div class="header-action"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></div>
+      </div>
+
+      <div class="send-body">
+        <div class="send-label">To address or ENS</div>
+        <input class="send-input" placeholder="0x... or name.eth" id="send-address" />
+
+        <div class="send-label">Token</div>
+        <div class="token-selector">
+          <div class="token-icon" style="width:28px;height:28px;background:transparent;"><img src="https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons/svg/color/matic.svg" style="width:28px;height:28px;border-radius:50%;"></div>
+          <span class="token-selector-name">MATIC</span>
+          <span style="font-size:12px;color:var(--text-muted);">Balance: 200</span>
+          <span class="token-selector-chevron">▾</span>
+        </div>
+
+        <div class="send-label">Amount</div>
+        <div class="amount-input-container">
+          <input class="amount-input" placeholder="0.00" type="number" id="send-amount" oninput="checkSendReady()" />
+          <button class="max-btn" onclick="document.getElementById('send-amount').value='200';checkSendReady()">MAX</button>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;margin-bottom:32px;">
+          <span style="font-size:12px;color:var(--text-muted);">≈ 0.00 USD</span>
+          <span style="font-size:12px;color:var(--text-muted);">Fee: ~0.001 MATIC</span>
+        </div>
+
+        <button class="send-action-btn" id="send-btn" disabled onclick="goTo('screen-confirm')">Review Transaction</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===========================
+       DEPOSIT SCREEN
+  =========================== -->
+  <div class="screen" id="screen-deposit">
+    <div class="status-bar"><span>12:30</span><div class="status-icons"><svg viewBox="0 0 24 24" width="16" height="16"><rect x="2" y="7" width="14" height="10" rx="2" stroke="white" stroke-width="1.5" fill="none"/><rect x="3" y="8" width="10" height="8" rx="1" fill="white"/></svg></div></div>
+
+    <div class="scroll-content">
+      <div class="page-header">
+        <button class="back-btn" onclick="goBack()"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+        <span class="page-header-title">Deposit</span>
+        <div class="header-spacer"></div>
+      </div>
+
+      <div class="deposit-body">
+        <div class="send-label" style="margin-bottom:16px;">Choose a method to add funds</div>
+
+        <div class="deposit-methods">
+          <div class="deposit-method" onclick="goTo('screen-deposit-qr')">
+            <div class="deposit-method-icon" style="background:rgba(124,58,237,0.2)">📋</div>
+            <div class="deposit-method-info">
+              <div class="deposit-method-name">Receive via address</div>
+              <div class="deposit-method-desc">Show your QR code or copy address</div>
+            </div>
+            <span class="deposit-method-arrow">›</span>
+          </div>
+          <div class="deposit-method" onclick="showToast('💳', 'Em breve disponível')">
+            <div class="deposit-method-icon" style="background:rgba(34,197,94,0.15)">💳</div>
+            <div class="deposit-method-info">
+              <div class="deposit-method-name">Buy with card</div>
+              <div class="deposit-method-desc">Visa, Mastercard accepted</div>
+            </div>
+            <span class="deposit-method-arrow">›</span>
+          </div>
+          <div class="deposit-method" onclick="showToast('🏦', 'Em breve disponível')">
+            <div class="deposit-method-icon" style="background:rgba(240,185,11,0.15)">🏦</div>
+            <div class="deposit-method-info">
+              <div class="deposit-method-name">Bank transfer</div>
+              <div class="deposit-method-desc">Transfer from your bank account</div>
+            </div>
+            <span class="deposit-method-arrow">›</span>
+          </div>
+          <div class="deposit-method" onclick="showToast('📱', 'Em breve disponível')">
+            <div class="deposit-method-icon" style="background:rgba(98,126,234,0.2)">🔄</div>
+            <div class="deposit-method-info">
+              <div class="deposit-method-name">From another wallet</div>
+              <div class="deposit-method-desc">Transfer from MetaMask or other wallets</div>
+            </div>
+            <span class="deposit-method-arrow">›</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===========================
+       DEPOSIT QR SCREEN
+  =========================== -->
+  <div class="screen" id="screen-deposit-qr">
+    <div class="status-bar"><span>12:30</span><div class="status-icons"><svg viewBox="0 0 24 24" width="16" height="16"><rect x="2" y="7" width="14" height="10" rx="2" stroke="white" stroke-width="1.5" fill="none"/><rect x="3" y="8" width="10" height="8" rx="1" fill="white"/></svg></div></div>
+
+    <div class="scroll-content">
+      <div class="page-header">
+        <button class="back-btn" onclick="goBack()"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+        <span class="page-header-title">Receive</span>
+        <div class="header-spacer"></div>
+      </div>
+
+      <div style="text-align:center;padding:0 24px 16px;">
+        <div style="font-size:14px;color:var(--text-muted);margin-bottom:4px;">Your Polygon address</div>
+        <div class="network-pill" style="margin:0 auto 16px;" onclick="openNetworkModal()">
+          <div class="network-dot"><img src="https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons/svg/color/matic.svg"></div>
+          <span>Polygon</span>
+          <span class="network-chevron">▾</span>
+        </div>
+      </div>
+
+      <div class="qr-container">
+        <div class="qr-placeholder"></div>
+        <div class="qr-address">0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D</div>
+      </div>
+
+      <button class="copy-address-btn" onclick="showToast('✅', 'Endereço copiado!')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+        Copy address
+      </button>
+
+      <div style="text-align:center;padding:0 24px;font-size:12px;color:var(--text-dim);line-height:1.5;">
+        Only send Polygon (MATIC) assets to this address. Sending other assets may result in permanent loss.
+      </div>
+    </div>
+  </div>
+
+  <!-- ===========================
+       ACTIVITY SCREEN
+  =========================== -->
+  <div class="screen" id="screen-activity">
+    <div class="status-bar" style="position:relative;z-index:10;"><span>12:30</span><div class="status-icons"><svg viewBox="0 0 24 24" width="16" height="16"><rect x="2" y="7" width="14" height="10" rx="2" stroke="white" stroke-width="1.5" fill="none"/><rect x="3" y="8" width="10" height="8" rx="1" fill="white"/></svg></div></div>
+
+    <div class="scroll-content">
+      <div class="activity-header">
+        <div style="text-align:center;font-size:16px;font-weight:600;color:var(--text);margin-bottom:10px;">Activity</div>
+        <div class="activity-title-bar">Transactions</div>
+      </div>
+
+      <div style="padding:0 16px;margin-bottom:12px;">
+        <div style="font-size:12px;color:var(--text-muted);font-weight:600;padding:12px 0 8px;border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:0.8px;">Today</div>
+        <div class="activity-list">
+          <div class="activity-item">
+            <div class="activity-icon swap">🔄</div>
+            <div class="activity-info">
+              <div class="activity-name">Swap MATIC → APE</div>
+              <div class="activity-date">12:30 · Polygon</div>
+            </div>
+            <div class="activity-amount">
+              <div class="activity-val out">−100 MATIC</div>
+              <div class="activity-usd">≈ $82.00</div>
+            </div>
+          </div>
+          <div class="activity-item">
+            <div class="activity-icon receive">↙️</div>
+            <div class="activity-info">
+              <div class="activity-name">Received ETH</div>
+              <div class="activity-date">09:15 · Ethereum</div>
+            </div>
+            <div class="activity-amount">
+              <div class="activity-val in">+0.5 ETH</div>
+              <div class="activity-usd">≈ $1,280.00</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="padding:0 16px;margin-bottom:12px;">
+        <div style="font-size:12px;color:var(--text-muted);font-weight:600;padding:12px 0 8px;border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:0.8px;">Yesterday</div>
+        <div class="activity-list">
+          <div class="activity-item">
+            <div class="activity-icon send">↗️</div>
+            <div class="activity-info">
+              <div class="activity-name">Sent USDC</div>
+              <div class="activity-date">18:40 · Polygon</div>
+            </div>
+            <div class="activity-amount">
+              <div class="activity-val out">−250 USDC</div>
+              <div class="activity-usd">≈ $250.00</div>
+            </div>
+          </div>
+          <div class="activity-item">
+            <div class="activity-icon swap">🔄</div>
+            <div class="activity-info">
+              <div class="activity-name">Swap ETH → DAI</div>
+              <div class="activity-date">14:22 · Ethereum</div>
+            </div>
+            <div class="activity-amount">
+              <div class="activity-val out">−0.3 ETH</div>
+              <div class="activity-usd">≈ $768.00</div>
+            </div>
+          </div>
+          <div class="activity-item">
+            <div class="activity-icon receive">↙️</div>
+            <div class="activity-info">
+              <div class="activity-name">Received DAI</div>
+              <div class="activity-date">14:22 · Ethereum</div>
+            </div>
+            <div class="activity-amount">
+              <div class="activity-val in">+768.00 DAI</div>
+              <div class="activity-usd">≈ $768.00</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bottom-nav">
+      <button class="nav-item" onclick="goTo('screen-home');setActiveNav(this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="9" height="9" rx="1"/><rect x="13" y="3" width="9" height="9" rx="1"/><rect x="2" y="14" width="9" height="8" rx="1"/><rect x="13" y="14" width="9" height="8" rx="1"/></svg>
+        Web3 Wallet
+      </button>
+      <button class="nav-item" onclick="goTo('screen-dapps');setActiveNav(this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+        dApps
+      </button>
+      <button class="nav-item active" onclick="goTo('screen-activity');setActiveNav(this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><line x1="8" y1="9" x2="10" y2="9"/></svg>
+        Activity
+      </button>
+    </div>
+  </div>
+
+  <!-- ===========================
+       SCAN SCREEN
+  =========================== -->
+  <div class="screen" id="screen-scan" style="background:#000;">
+    <div class="status-bar" style="background:transparent;position:absolute;top:0;left:0;right:0;z-index:10;"><span>12:30</span></div>
+    <div class="scan-camera-area">📷</div>
+    <div class="scan-bg-overlay"></div>
+    <div class="scan-overlay">
+      <div style="position:absolute;top:20px;left:16px;z-index:20;">
+        <button class="back-btn" onclick="goBack()"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+      </div>
+      <div style="font-size:16px;font-weight:600;margin-bottom:32px;">Scan QR Code</div>
+      <div class="scan-frame">
+        <div class="scan-corner tl"></div>
+        <div class="scan-corner tr"></div>
+        <div class="scan-corner bl"></div>
+        <div class="scan-corner br"></div>
+        <div class="scan-line"></div>
+      </div>
+      <div class="scan-hint">Point the camera at a wallet address<br>or payment QR code</div>
+    </div>
+  </div>
+
+  <!-- ===========================
+       SUCCESS SCREEN
+  =========================== -->
+  <div class="screen" id="screen-success" style="display:flex;flex-direction:column;height:100%;">
+    <div class="status-bar" style="flex-shrink:0;"><span>12:30</span></div>
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 16px 32px;text-align:center;">
+      <div class="success-circle">
+        <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="var(--purple)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+      </div>
+      <div class="success-title">Swap Confirmed!</div>
+      <div class="success-desc">Your transaction has been submitted to the Polygon network.</div>
+      <div class="success-amount">+35.877677 APE</div>
+      <div class="success-sub">for 100 MATIC <span style="font-size:12px;color:var(--text-dim);font-weight:400;">≈ $41.00</span></div>
+      <div style="background:var(--surface);border-radius:12px;padding:14px 16px;width:100%;margin-bottom:24px;border:1px solid var(--border);">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+          <span style="font-size:12px;color:var(--text-muted);white-space:nowrap;">Transaction hash</span>
+          <span style="font-size:12px;color:var(--purple-light);font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">0x4f1a2c8e...b8c2f3a1</span>
+        </div>
+      </div>
+      <button class="success-btn" onclick="goTo('screen-home')" style="width:100%;">Back to Wallet</button>
+    </div>
+  </div>
+
+  <!-- ===========================
+       NFT DETAIL SCREEN
+  =========================== -->
+  <div class="screen" id="screen-nft-detail">
+    <div class="status-bar" style="position:relative;z-index:10;"><span>12:30</span><div class="status-icons"><svg viewBox="0 0 24 24" width="16" height="16"><rect x="2" y="7" width="14" height="10" rx="2" stroke="white" stroke-width="1.5" fill="none"/><rect x="3" y="8" width="10" height="8" rx="1" fill="white"/></svg></div></div>
+
+    <div class="scroll-content">
+      <div class="page-header">
+        <button class="back-btn" onclick="goBack()"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+        <span class="page-header-title" id="nft-collection-title">BAYC</span>
+        <div class="header-action"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></div>
+      </div>
+
+      <div style="padding:0 16px 12px;">
+        <div style="font-size:22px;font-weight:800;color:var(--text);" id="nft-detail-name">Bored Ape #4281</div>
+      </div>
+
+      <div class="nft-detail-image">
+        <img id="nft-detail-img" src="" alt="NFT" style="width:100%;height:100%;object-fit:cover;display:block;">
+      </div>
+
+      <!-- Market stats -->
+      <div class="nft-market-stats">
+        <div class="nft-stat">
+          <div class="nft-stat-label">Floor</div>
+          <div class="nft-stat-val" id="nft-stat-floor">Ξ 68.5</div>
+        </div>
+        <div class="nft-stat">
+          <div class="nft-stat-label">Best offer</div>
+          <div class="nft-stat-val offer" id="nft-stat-offer">—</div>
+        </div>
+        <div class="nft-stat">
+          <div class="nft-stat-label">Last sale</div>
+          <div class="nft-stat-val" id="nft-stat-last">—</div>
+        </div>
+      </div>
+
+      <!-- Dynamic CTAs -->
+      <div id="nft-cta-root"></div>
+
+      <!-- Description -->
+      <div style="padding:0 16px 20px;">
+        <div class="nft-section-title">Description</div>
+        <div class="nft-desc-text" id="nft-desc-short">20,000 unique crypto investors on the blockchain with commercial rights. One of the most iconic NFT collections in the Web3 ecosystem...</div>
+        <button class="nft-view-more" id="nft-view-more-btn" onclick="toggleNftDesc()">
+          View more
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+      </div>
+
+      <!-- Traits -->
+      <div style="padding:0 16px 12px;">
+        <div class="nft-section-title">Traits</div>
+      </div>
+      <div class="nft-traits">
+        <div class="nft-trait"><div class="nft-trait-type">Background</div><div class="nft-trait-val">Aquamarine</div></div>
+        <div class="nft-trait"><div class="nft-trait-type">Fur</div><div class="nft-trait-val">Tan</div></div>
+        <div class="nft-trait"><div class="nft-trait-type">Eyes</div><div class="nft-trait-val">Bored</div></div>
+        <div class="nft-trait"><div class="nft-trait-type">Hat</div><div class="nft-trait-val">Headband</div></div>
+        <div class="nft-trait"><div class="nft-trait-type">Mouth</div><div class="nft-trait-val">Bored Unshaven</div></div>
+        <div class="nft-trait"><div class="nft-trait-type">Clothes</div><div class="nft-trait-val">Bandolier</div></div>
+      </div>
+
+      <!-- Details -->
+      <div style="padding:0 16px 12px;">
+        <div class="nft-section-title">Details</div>
+      </div>
+      <div class="nft-details-card">
+        <div class="nft-detail-row">
+          <span class="nft-detail-row-label">Contract address</span>
+          <span class="nft-detail-row-val">&lt;addr………ess&gt;</span>
+        </div>
+        <div class="nft-detail-row">
+          <span class="nft-detail-row-label">Token ID</span>
+          <span class="nft-detail-row-val plain" id="nft-token-id">4281</span>
+        </div>
+        <div class="nft-detail-row">
+          <span class="nft-detail-row-label">Token standard</span>
+          <span class="nft-detail-row-val plain">ERC-721</span>
+        </div>
+        <div class="nft-detail-row">
+          <span class="nft-detail-row-label">Chain</span>
+          <span class="nft-detail-row-val plain">Ethereum</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NFT more-actions sheet -->
+  <div class="nft-overlay" id="nft-more-overlay" onclick="hideNftMore()"></div>
+  <div class="nft-more-sheet" id="nft-more-sheet">
+    <div class="nft-sheet-handle"></div>
+    <div class="nft-more-item" onclick="nftAction('pfp')">
+      <div class="nft-more-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></div>
+      Set as Profile Picture
+    </div>
+    <div class="nft-more-item" onclick="nftAction('bridge')">
+      <div class="nft-more-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17h18M3 7h18M7 7v10M17 7v10"/></svg></div>
+      Bridge NFT
+    </div>
+    <div class="nft-more-item" onclick="nftAction('revoke')">
+      <div class="nft-more-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9.5 12l2 2 3-3"/></svg></div>
+      Revoke Permissions
+    </div>
+    <div class="nft-more-item" onclick="nftAction('hide')">
+      <div class="nft-more-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><path d="M1 1l22 22"/></svg></div>
+      Hide NFT
+    </div>
+    <div class="nft-more-divider"></div>
+    <div class="nft-more-section-label">Danger zone</div>
+    <div class="nft-more-item danger" onclick="hideNftMore(); nftConfirm('burn')">
+      <div class="nft-more-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#F87171" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C9 5 6 8 6 12a6 6 0 0012 0c0-3.5-1.5-6-3-8z"/><path d="M12 12c-1 1.5-1 3.5 0 5"/></svg></div>
+      Burn NFT
+    </div>
+  </div>
+
+  <!-- NFT confirm sheet -->
+  <div class="nft-confirm-overlay" id="nft-confirm-overlay" onclick="hideNftConfirm()"></div>
+  <div class="nft-confirm-sheet" id="nft-confirm-sheet">
+    <div class="nft-confirm-icon-wrap info" id="nft-confirm-icon-wrap">
+      <svg id="nft-confirm-icon-svg" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></svg>
+    </div>
+    <div class="nft-confirm-title" id="nft-confirm-title">Confirm Action</div>
+    <div class="nft-confirm-desc"  id="nft-confirm-desc">Are you sure?</div>
+    <div id="nft-confirm-rows"></div>
+    <div class="nft-confirm-btns">
+      <button class="nft-confirm-cancel" onclick="hideNftConfirm()">Cancel</button>
+      <button class="nft-confirm-action ok" id="nft-confirm-action-btn">Confirm</button>
+    </div>
+  </div>
+
+</div><!-- /phone -->
+
+<script>
+  let screenHistory = ['screen-home'];
+  let currentNetwork = 'Polygon';
+  let balanceHidden = false;
+
+  /* ── Rolling number ── */
+  const DIGIT_H = 46;
+  let INT_PART = '3,224';
+  let currentCents = 35;
+
+  function buildRolling() {
+    const container = document.getElementById('rolling-number');
+    container.innerHTML = '';
+
+    // Static integer part — doesn't change with price
+    for (const ch of INT_PART) {
+      const s = document.createElement('span');
+      s.className = 'roll-static';
+      s.textContent = ch;
+      container.appendChild(s);
+    }
+
+    // Decimal separator
+    const dot = document.createElement('span');
+    dot.className = 'roll-static';
+    dot.textContent = '.';
+    container.appendChild(dot);
+
+    // Rolling cent digits — these update with live price
+    const centsStr = String(currentCents).padStart(2, '0');
+    for (const ch of centsStr) {
+      const col = document.createElement('div');
+      col.className = 'roll-col cents-col';
+      const strip = document.createElement('div');
+      strip.className = 'roll-strip';
+      strip.dataset.target = ch;
+      for (let d = 0; d <= 9; d++) {
+        const s = document.createElement('span');
+        s.textContent = d;
+        strip.appendChild(s);
+      }
+      col.appendChild(strip);
+      container.appendChild(col);
+    }
+  }
+
+  function animateCentsStrips(strips) {
+    strips.forEach((strip, i) => {
+      const target = parseInt(strip.dataset.target);
+      strip.style.transform = 'translateY(0)';
+      strip.classList.remove('animate');
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        strip.classList.add('animate');
+        strip.style.transitionDelay = `${i * 80}ms`;
+        strip.style.transform = `translateY(-${target * DIGIT_H}px)`;
+      }));
+    });
+  }
+
+  function animateRolling() {
+    const strips = Array.from(document.querySelectorAll('.cents-col .roll-strip'));
+    animateCentsStrips(strips);
+  }
+
+  // Live price ticker: update cents every ~2.5s simulating real-time price
+  setInterval(() => {
+    if (!document.querySelector('#screen-home.active')) return;
+    const delta = Math.floor(Math.random() * 7) - 3;
+    currentCents = Math.max(0, Math.min(99, currentCents + delta));
+    const centsStr = String(currentCents).padStart(2, '0');
+    const strips = Array.from(document.querySelectorAll('.cents-col .roll-strip'));
+    strips.forEach((strip, i) => { strip.dataset.target = centsStr[i]; });
+    animateCentsStrips(strips);
+  }, 10000);
+
+  /* ── Entrance animations ── */
+  function animateHomeIn() {
+    const targets = [
+      { sel: '.network-pill, .address-pill', cls: 'a-slide-dn', base: 0 },
+      { sel: '.balance-label',               cls: 'a-fade',     base: 80 },
+      { sel: '#balance-display',             cls: 'a-fade',     base: 120 },
+      { sel: '#eye-btn',                     cls: 'a-fade',     base: 150 },
+      { sel: '.action-btn',                  cls: 'a-scale',    base: 200, stagger: 60 },
+      { sel: '.banner',                      cls: 'a-slide-up', base: 420 },
+      { sel: '.tabs',                        cls: 'a-fade',     base: 460 },
+      { sel: '.token-item',                  cls: 'a-slide-up', base: 490, stagger: 55 },
+    ];
+    targets.forEach(({ sel, cls, base, stagger = 0 }) => {
+      document.querySelectorAll(`#screen-home ${sel}`).forEach((el, i) => {
+        el.style.animation = 'none';
+        el.style.opacity = '0';
+        requestAnimationFrame(() => {
+          el.style.animation = '';
+          el.style.animationDelay = `${base + i * stagger}ms`;
+          el.classList.remove(cls);
+          void el.offsetWidth;
+          el.classList.add(cls);
+        });
+      });
+    });
+  }
+
+  /* ── Navigation ── */
+  function goTo(screenId) {
+    const all = document.querySelectorAll('.screen');
+    all.forEach(s => s.classList.remove('active'));
+    document.getElementById(screenId).classList.add('active');
+    if (screenHistory[screenHistory.length-1] !== screenId) {
+      screenHistory.push(screenId);
+    }
+    if (screenId === 'screen-home') {
+      setTimeout(animateRolling, 80);
+    }
+  }
+
+  function goBack() {
+    if (screenHistory.length > 1) {
+      screenHistory.pop();
+      const prev = screenHistory[screenHistory.length-1];
+      const all = document.querySelectorAll('.screen');
+      all.forEach(s => s.classList.remove('active'));
+      document.getElementById(prev).classList.add('active');
+      if (prev === 'screen-home') setTimeout(animateRolling, 80);
+    }
+  }
+
+  function setActiveNav(el) {
+    const nav = el.closest('.bottom-nav');
+    if (!nav) return;
+    nav.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  function animateCards(container) {
+    const items = container.querySelectorAll('.token-item, .nft-card');
+    items.forEach((item, i) => {
+      item.classList.remove('a-slide-up');
+      void item.offsetWidth;
+      item.style.animationDelay = `${i * 45}ms`;
+      item.classList.add('a-slide-up');
+    });
+  }
+
+  function switchTab(tab, el) {
+    const tokensEl    = document.getElementById('tab-tokens');
+    const tokensAllEl = document.getElementById('tab-tokens-all');
+    const nftsEl      = document.getElementById('tab-nfts');
+
+    tokensEl.style.display    = 'none';
+    tokensAllEl.style.display = 'none';
+    nftsEl.style.display      = 'none';
+
+    if (tab === 'tokens') {
+      if (currentNetwork === 'All networks') {
+        tokensAllEl.style.display = '';
+        animateCards(tokensAllEl);
+      } else {
+        tokensEl.style.display = 'block';
+        animateCards(tokensEl);
+      }
+    } else {
+      nftsEl.style.display = 'block';
+      animateCards(nftsEl);
+    }
+
+    el.closest('.tabs').querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  function showToast(icon, text) {
+    const toast = document.getElementById('toast');
+    document.getElementById('toast-icon').textContent = icon;
+    document.getElementById('toast-text').textContent = text;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2500);
+  }
+
+  function copyAddress() {
+    showToast('✅', 'Endereço copiado!');
+  }
+
+  function toggleBalance() {
+    balanceHidden = !balanceHidden;
+    const display = document.getElementById('balance-display');
+    const eyeOn = document.getElementById('eye-icon');
+    const eyeOff = document.getElementById('eye-off-icon');
+    display.style.filter = balanceHidden ? 'blur(8px)' : 'none';
+    eyeOn.style.display = balanceHidden ? 'none' : 'block';
+    eyeOff.style.display = balanceHidden ? 'block' : 'none';
+  }
+
+  function confirmSwap() {
+    goTo('screen-success');
+    screenHistory = ['screen-home', 'screen-success'];
+  }
+
+  function checkSendReady() {
+    const addr = document.getElementById('send-address').value;
+    const amount = document.getElementById('send-amount').value;
+    const btn = document.getElementById('send-btn');
+    btn.disabled = !(amount && parseFloat(amount) > 0);
+  }
+
+  function filterDapps(cat, el) {
+    el.closest('.filter-chips').querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    const items = document.querySelectorAll('#screen-dapps .dapp-item');
+    items.forEach(item => {
+      if (cat === 'all') { item.style.display = 'flex'; return; }
+      const itemCat = (item.getAttribute('data-cat') || '');
+      item.style.display = itemCat.includes(cat) ? 'flex' : 'none';
+    });
+  }
+
+  function openNetworkModal() {
+    document.getElementById('network-modal').classList.add('show');
+  }
+
+  function closeNetworkModal(e) {
+    if (e.target === document.getElementById('network-modal')) {
+      document.getElementById('network-modal').classList.remove('show');
+    }
+  }
+
+  const NETWORK_LOGOS = {
+    'Polygon':  'https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons/svg/color/matic.svg',
+    'Ethereum': 'https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons/svg/color/eth.svg',
+    'BNB Chain':'https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons/svg/color/bnb.svg',
+    'Arbitrum': 'https://assets.coingecko.com/coins/images/16547/small/photo_2023-03-29_21.47.00.jpeg',
+  };
+
+  const ALL_NETWORKS_DOT = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+    <defs><linearGradient id="gng-p" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#8247E5"/><stop offset="55%" stop-color="#627EEA"/><stop offset="100%" stop-color="#28A0F0"/></linearGradient></defs>
+    <circle cx="12" cy="12" r="10" stroke="url(#gng-p)"/>
+    <ellipse cx="12" cy="12" rx="4" ry="10" stroke="url(#gng-p)"/>
+    <line x1="2" y1="12" x2="22" y2="12" stroke="url(#gng-p)"/>
+    <path d="M3.5 7.5 Q12 10 20.5 7.5" stroke="url(#gng-p)"/>
+    <path d="M3.5 16.5 Q12 14 20.5 16.5" stroke="url(#gng-p)"/>
+  </svg>`;
+
+  function selectNetwork(name) {
+    currentNetwork = name;
+    document.getElementById('network-name').textContent = name;
+
+    const dot = document.querySelector('.network-pill .network-dot');
+    if (dot) {
+      if (name === 'All networks') {
+        dot.innerHTML = ALL_NETWORKS_DOT;
+      } else {
+        dot.innerHTML = `<img id="network-dot-img" src="${NETWORK_LOGOS[name] || ''}" style="width:20px;height:20px;border-radius:50%;">`;
+      }
+    }
+
+    const balStr = name === 'All networks' ? '3,224.35' : (NETWORK_DATA[name] ? NETWORK_DATA[name].balance : '3,224.35');
+    setBalance(balStr);
+    renderNetworkTokens(name);
+
+    document.querySelectorAll('[id^="check-"]').forEach(el => el.style.opacity = '0');
+    const key = name === 'All networks' ? 'allnetworks' : name.toLowerCase().replace(/ /g, '').replace('chain','');
+    const check = document.getElementById('check-' + key);
+    if (check) check.style.opacity = '1';
+    document.getElementById('network-modal').classList.remove('show');
+    showToast('🔗', 'Rede: ' + name);
+  }
+
+  // Simulate fee countdown
+  setInterval(() => {
+    const badge = document.querySelector('.detail-value.update-badge');
+    if (!badge) return;
+    let match = badge.textContent.match(/(\d+)s/);
+    if (match) {
+      let secs = parseInt(match[1]) - 1;
+      if (secs <= 0) secs = 20;
+      badge.textContent = `↻ will update in <${secs}s>`;
+    }
+  }, 1000);
+
+  /* ── NFT metadata per tokenId ── */
+  const NFT_META = {
+    '4281': {
+      floor: 'Ξ 68.5', bestOffer: 'Ξ 62.0', lastSale: 'Ξ 71.2',
+      isListed: false, listPrice: null, hasOffers: true,
+      utility: [], marketplace: 'OpenSea', collection: 'BAYC',
+    },
+    '7804': {
+      floor: 'Ξ 4,200', bestOffer: null, lastSale: 'Ξ 3,950',
+      isListed: true, listPrice: 'Ξ 4,350', hasOffers: false,
+      utility: [], marketplace: 'Blur', collection: 'CryptoPunks',
+    },
+    '8765': {
+      floor: 'Ξ 12.3', bestOffer: 'Ξ 11.1', lastSale: 'Ξ 11.8',
+      isListed: false, listPrice: null, hasOffers: false,
+      utility: ['stake', 'claim'], marketplace: 'OpenSea', collection: 'Azuki',
+    },
+    '1234': {
+      floor: 'Ξ 5.8', bestOffer: null, lastSale: 'Ξ 5.1',
+      isListed: false, listPrice: null, hasOffers: false,
+      utility: [], marketplace: 'OpenSea', collection: 'Doodles',
+    },
+    '9876': {
+      floor: 'Ξ 3.1', bestOffer: null, lastSale: 'Ξ 2.8',
+      isListed: false, listPrice: null, hasOffers: false,
+      utility: ['use'], marketplace: 'OpenSea', collection: 'CloneX',
+    },
+    '3421': {
+      floor: 'Ξ 7.2', bestOffer: 'Ξ 6.5', lastSale: 'Ξ 8.1',
+      isListed: false, listPrice: null, hasOffers: true,
+      utility: ['stake', 'redeem'], marketplace: 'OpenSea', collection: 'Moonbirds',
+    },
+  };
+
+  let currentNftMeta = null;
+  let currentNftName = '';
+
+  function openNft(name, collection, price, imgUrl, tokenId, desc) {
+    document.getElementById('nft-detail-name').textContent = name;
+    document.getElementById('nft-collection-title').textContent = collection;
+    document.getElementById('nft-detail-img').src = imgUrl;
+    document.getElementById('nft-token-id').textContent = tokenId;
+    document.getElementById('nft-desc-short').textContent = desc.slice(0, 120) + '...';
+    document.getElementById('nft-desc-short').dataset.full = desc;
+    document.getElementById('nft-desc-short').dataset.short = desc.slice(0, 120) + '...';
+    const btn = document.getElementById('nft-view-more-btn');
+    btn.classList.remove('expanded');
+    btn.querySelector('span') && (btn.querySelector('span').textContent = 'View more');
+
+    const meta = NFT_META[tokenId] || {
+      floor: price, bestOffer: null, lastSale: null,
+      isListed: false, listPrice: null, hasOffers: false,
+      utility: [], marketplace: 'OpenSea', collection,
+    };
+    currentNftMeta = meta;
+    currentNftName = name;
+
+    // Market stats
+    document.getElementById('nft-stat-floor').textContent = meta.floor;
+    const offerEl = document.getElementById('nft-stat-offer');
+    offerEl.textContent = meta.bestOffer || '—';
+    offerEl.className = 'nft-stat-val ' + (meta.bestOffer ? 'offer' : 'muted');
+    const lastEl = document.getElementById('nft-stat-last');
+    lastEl.textContent = meta.lastSale || '—';
+    lastEl.className = 'nft-stat-val' + (meta.lastSale ? '' : ' muted');
+
+    renderNftCTAs(meta);
+    goTo('screen-nft-detail');
+  }
+
+  /* ── Icon snippets ── */
+  const _ico = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+  const ICONS = {
+    tag:    _ico('<path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/>'),
+    send:   _ico('<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>'),
+    edit:   _ico('<path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>'),
+    x:      _ico('<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>'),
+    check:  _ico('<polyline points="20 6 9 17 4 12"/>'),
+    globe:  _ico('<circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/>'),
+    user:   _ico('<path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>'),
+    share:  _ico('<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>'),
+    grid:   _ico('<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>'),
+    lock:   _ico('<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>'),
+    coin:   _ico('<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>'),
+    game:   _ico('<rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 12h4m-2-2v4"/><circle cx="15" cy="11" r="1" fill="currentColor"/><circle cx="17" cy="13" r="1" fill="currentColor"/>'),
+    gift:   _ico('<polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/>'),
+  };
+
+  function renderNftCTAs(meta) {
+    const root = document.getElementById('nft-cta-root');
+    let html = '<div class="nft-cta-section">';
+
+    // ── Primary CTAs ──
+    if (meta.isListed) {
+      html += `<div class="nft-btn-row">
+        <button class="nft-btn listed" onclick="nftConfirm('edit')">${ICONS.edit} Edit Listing <span class="nft-btn-sub">${meta.listPrice}</span></button>
+        <button class="nft-btn danger" onclick="nftConfirm('cancel')">${ICONS.x} Cancel</button>
+      </div>`;
+    } else if (meta.hasOffers) {
+      html += `<button class="nft-btn accept" style="width:100%" onclick="nftConfirm('accept')">${ICONS.check} Accept Offer <span class="nft-btn-sub">${meta.bestOffer}</span></button>
+      <button class="nft-btn primary" style="width:100%" onclick="nftConfirm('list')">${ICONS.tag} List for Sale</button>`;
+    } else {
+      html += `<button class="nft-btn primary" style="width:100%" onclick="nftConfirm('list')">${ICONS.tag} List for Sale</button>`;
+    }
+
+    // Send always present
+    html += `<button class="nft-btn ghost" style="width:100%" onclick="nftConfirm('send')">${ICONS.send} Send NFT</button>`;
+    html += '</div>';
+
+    // ── Secondary chips ──
+    html += `<div class="nft-secondary-actions">
+      <button class="nft-chip" onclick="nftAction('marketplace')">
+        <div class="nft-chip-icon">${ICONS.globe}</div>
+        <span class="nft-chip-label">${meta.marketplace}</span>
+      </button>
+      <button class="nft-chip" onclick="nftAction('pfp')">
+        <div class="nft-chip-icon">${ICONS.user}</div>
+        <span class="nft-chip-label">Set as PFP</span>
+      </button>
+      <button class="nft-chip" onclick="nftAction('share')">
+        <div class="nft-chip-icon">${ICONS.share}</div>
+        <span class="nft-chip-label">Share</span>
+      </button>
+      <button class="nft-chip" onclick="nftAction('collection')">
+        <div class="nft-chip-icon">${ICONS.grid}</div>
+        <span class="nft-chip-label">Collection</span>
+      </button>
+    </div>`;
+
+    // ── Utility (only if applicable) ──
+    if (meta.utility && meta.utility.length > 0) {
+      const utilDefs = {
+        stake:  { label: 'Stake NFT',    icon: ICONS.lock  },
+        claim:  { label: 'Claim Rewards',icon: ICONS.coin  },
+        use:    { label: 'Use in App',   icon: ICONS.game  },
+        redeem: { label: 'Redeem',       icon: ICONS.gift  },
+      };
+      html += '<div class="nft-utility-section"><div class="nft-utility-label">Utility</div><div class="nft-utility-row">';
+      meta.utility.forEach(u => {
+        const d = utilDefs[u] || { label: u, icon: ICONS.gift };
+        html += `<button class="nft-utility-btn" onclick="nftAction('utility_${u}')">
+          ${d.icon}<span class="nft-utility-btn-label">${d.label}</span>
+        </button>`;
+      });
+      html += '</div></div>';
+    }
+
+    // ── More trigger ──
+    html += `<button class="nft-more-trigger" onclick="showNftMore()">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+      More options
+    </button>`;
+
+    root.innerHTML = html;
+
+    // Animate in
+    requestAnimationFrame(() => {
+      root.querySelectorAll('.nft-btn, .nft-chip, .nft-utility-btn').forEach((el, i) => {
+        el.style.animationDelay = `${i * 35}ms`;
+        el.classList.add('a-slide-up');
+      });
+    });
+  }
+
+  /* ── More sheet ── */
+  function showNftMore() {
+    document.getElementById('nft-more-sheet').classList.add('open');
+    document.getElementById('nft-more-overlay').classList.add('open');
+  }
+  function hideNftMore() {
+    document.getElementById('nft-more-sheet').classList.remove('open');
+    document.getElementById('nft-more-overlay').classList.remove('open');
+  }
+
+  /* ── Action dispatch ── */
+  function nftAction(type) {
+    hideNftMore();
+    const msgs = {
+      marketplace: ['🌐', `Opening on ${currentNftMeta?.marketplace || 'OpenSea'}…`],
+      pfp:         ['🖼️', 'Set as profile picture!'],
+      share:       ['📤', 'Share link copied!'],
+      collection:  ['📊', 'Viewing collection…'],
+      hide:        ['🙈', 'NFT hidden from gallery'],
+      bridge:      ['🌉', 'Bridge coming soon'],
+      revoke:      ['🔒', 'Permissions manager coming soon'],
+      utility_stake:  ['🔒', 'Staking coming soon'],
+      utility_claim:  ['💰', 'Rewards: Ξ 0.24 available'],
+      utility_use:    ['🎮', 'Launching in app…'],
+      utility_redeem: ['🎁', 'Benefit redeemed!'],
+    };
+    const [icon, text] = msgs[type] || ['✨', 'Coming soon'];
+    showToast(icon, text);
+  }
+
+  /* ── Confirm sheet ── */
+  const CONFIRM_DEFS = {
+    list: {
+      icon: 'tag', iconClass: 'info', btnClass: 'ok', btnLabel: 'List for Sale',
+      title: 'List for Sale',
+      desc: 'Your NFT will be listed on the marketplace. You can cancel anytime.',
+      rows: () => [
+        ['NFT', currentNftName],
+        ['Marketplace', currentNftMeta?.marketplace || 'OpenSea'],
+        ['Platform fee', '2.5%'],
+      ],
+    },
+    accept: {
+      icon: 'check', iconClass: 'accept', btnClass: 'go', btnLabel: 'Accept Offer',
+      title: 'Accept Offer?',
+      desc: 'You will receive the offer amount minus marketplace fees. This cannot be undone.',
+      rows: () => [
+        ['Offer amount', currentNftMeta?.bestOffer || '—'],
+        ['Platform fee', '2.5%'],
+        ['You receive', currentNftMeta?.bestOffer ? currentNftMeta.bestOffer.replace('Ξ', 'Ξ ~') : '—'],
+      ],
+    },
+    send: {
+      icon: 'send', iconClass: 'info', btnClass: 'ok', btnLabel: 'Send NFT',
+      title: 'Send NFT',
+      desc: 'Transfer this NFT to another wallet address. Double-check the address — this action is irreversible.',
+      rows: () => [
+        ['NFT', currentNftName],
+        ['Network fee', '~Ξ 0.002'],
+      ],
+    },
+    edit: {
+      icon: 'edit', iconClass: 'info', btnClass: 'ok', btnLabel: 'Update Listing',
+      title: 'Edit Listing',
+      desc: 'Update the listing price for your NFT.',
+      rows: () => [
+        ['Current price', currentNftMeta?.listPrice || '—'],
+        ['Marketplace', currentNftMeta?.marketplace || 'OpenSea'],
+      ],
+    },
+    cancel: {
+      icon: 'x', iconClass: 'warn', btnClass: 'ok', btnLabel: 'Cancel Listing',
+      title: 'Cancel Listing?',
+      desc: 'Your NFT will be de-listed from the marketplace. Gas fees may apply.',
+      rows: () => [
+        ['Listed at', currentNftMeta?.listPrice || '—'],
+        ['Est. gas fee', '~Ξ 0.001'],
+      ],
+    },
+    burn: {
+      icon: 'fire', iconClass: 'warn', btnClass: 'burn', btnLabel: '🔥 Burn Forever',
+      title: 'Burn this NFT?',
+      desc: 'This will permanently destroy the NFT. This action is irreversible and cannot be undone.',
+      rows: () => [
+        ['NFT', currentNftName],
+        ['Token ID', document.getElementById('nft-token-id')?.textContent || '—'],
+        ['Warning', '⚠️ Permanent'],
+      ],
+    },
+  };
+
+  const CONFIRM_ICONS = {
+    tag:   '<path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/>',
+    check: '<polyline points="20 6 9 17 4 12"/>',
+    send:  '<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>',
+    edit:  '<path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>',
+    x:     '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
+    fire:  '<path d="M12 2C9 5 6 8 6 12a6 6 0 0012 0c0-3.5-1.5-6-3-8z"/><path d="M12 12c-1 1.5-1 3.5 0 5"/>',
+  };
+
+  function nftConfirm(type) {
+    const def = CONFIRM_DEFS[type];
+    if (!def) return;
+    const iconWrap = document.getElementById('nft-confirm-icon-wrap');
+    const iconSvg  = document.getElementById('nft-confirm-icon-svg');
+    iconWrap.className = `nft-confirm-icon-wrap ${def.iconClass}`;
+    iconSvg.innerHTML  = CONFIRM_ICONS[def.icon] || '';
+    iconSvg.setAttribute('stroke', def.iconClass === 'warn' ? '#F87171' : def.iconClass === 'accept' ? '#22C55E' : 'var(--purple-light)');
+    document.getElementById('nft-confirm-title').textContent = def.title;
+    document.getElementById('nft-confirm-desc').textContent  = def.desc;
+    const rowsEl = document.getElementById('nft-confirm-rows');
+    rowsEl.innerHTML = def.rows().map(([l, v]) =>
+      `<div class="nft-confirm-row"><span>${l}</span><span>${v}</span></div>`
+    ).join('');
+    const actionBtn = document.getElementById('nft-confirm-action-btn');
+    actionBtn.textContent = def.btnLabel;
+    actionBtn.className   = `nft-confirm-action ${def.btnClass}`;
+    actionBtn.onclick = () => executeNftAction(type);
+    document.getElementById('nft-confirm-overlay').classList.add('open');
+    document.getElementById('nft-confirm-sheet').classList.add('open');
+  }
+
+  function hideNftConfirm() {
+    document.getElementById('nft-confirm-overlay').classList.remove('open');
+    document.getElementById('nft-confirm-sheet').classList.remove('open');
+  }
+
+  function executeNftAction(type) {
+    const btn = document.getElementById('nft-confirm-action-btn');
+    btn.disabled = true;
+    btn.classList.add('loading');
+    setTimeout(() => {
+      hideNftConfirm();
+      btn.disabled = false;
+      btn.classList.remove('loading');
+      const toasts = {
+        list:   ['🏷️', 'Listed on ' + (currentNftMeta?.marketplace || 'OpenSea') + '!'],
+        accept: ['💰', 'Offer accepted! Funds incoming.'],
+        send:   ['📤', 'NFT sent successfully!'],
+        edit:   ['✏️', 'Listing updated!'],
+        cancel: ['❌', 'Listing cancelled.'],
+        burn:   ['🔥', 'NFT burned permanently.'],
+      };
+      const [icon, text] = toasts[type] || ['✅', 'Done!'];
+      showToast(icon, text);
+      // Update local state for list/cancel
+      if (type === 'list' && currentNftMeta) {
+        currentNftMeta.isListed = true;
+        currentNftMeta.listPrice = 'Ξ —';
+        renderNftCTAs(currentNftMeta);
+      }
+      if (type === 'cancel' && currentNftMeta) {
+        currentNftMeta.isListed = false;
+        currentNftMeta.listPrice = null;
+        renderNftCTAs(currentNftMeta);
+      }
+      if (type === 'accept' && currentNftMeta) {
+        currentNftMeta.hasOffers = false;
+        currentNftMeta.bestOffer = null;
+        renderNftCTAs(currentNftMeta);
+      }
+    }, 1200);
+  }
+
+  function toggleNftDesc() {
+    const el = document.getElementById('nft-desc-short');
+    const btn = document.getElementById('nft-view-more-btn');
+    const expanded = btn.classList.toggle('expanded');
+    el.textContent = expanded ? el.dataset.full : el.dataset.short;
+    btn.childNodes[0].textContent = expanded ? 'View less ' : 'View more ';
+  }
+
+  /* ── Network token data ── */
+  const CDN = 'https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons/svg/color/';
+  const LOGO_URL = {
+    matic: CDN + 'matic.svg',
+    eth:   CDN + 'eth.svg',
+    dai:   CDN + 'dai.svg',
+    usdc:  CDN + 'usdc.svg',
+    bnb:   CDN + 'bnb.svg',
+    sol:   'https://assets.coingecko.com/coins/images/4128/small/solana.png',
+    arb:   'https://assets.coingecko.com/coins/images/16547/small/photo_2023-03-29_21.47.00.jpeg',
+  };
+
+  const NETWORK_DATA = {
+    'Polygon': {
+      balance: '232.00',
+      tokens: [
+        { name:'Polygon',  sub:'MATIC', price:'$164.00', pct:'2.31%', pos:false, logo:'matic', onclick:"goTo('screen-swap')" },
+        { name:'DAI',      sub:'DAI',   price:'$40.00',  pct:'0.02%', pos:false, logo:'dai' },
+        { name:'USD Coin', sub:'USDC',  price:'$28.00',  pct:'0.01%', pos:true,  logo:'usdc' },
+      ]
+    },
+    'Ethereum': {
+      balance: '630.00',
+      tokens: [
+        { name:'Ethereum', sub:'ETH',  price:'$593.24', pct:'3.96%', pos:true, logo:'eth' },
+        { name:'USD Coin', sub:'USDC', price:'$36.76',  pct:'0.01%', pos:true, logo:'usdc' },
+      ]
+    },
+    'Solana': {
+      balance: '273.29',
+      tokens: [
+        { name:'Solana', sub:'SOL', price:'$273.29', pct:'6.78%', pos:true, logo:'sol' },
+      ]
+    },
+    'BNB Chain': {
+      balance: '306.23',
+      tokens: [
+        { name:'BNB', sub:'BNB', price:'$306.23', pct:'0.87%', pos:true, logo:'bnb' },
+      ]
+    },
+    'Arbitrum': {
+      balance: '1,782.83',
+      tokens: [
+        { name:'Ethereum', sub:'ETH', price:'$1,782.83', pct:'3.96%', pos:true, logo:'eth' },
+      ]
+    },
+  };
+
+  const UP_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>`;
+  const DN_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>`;
+
+  function setBalance(balStr) {
+    const parts = balStr.split('.');
+    INT_PART = parts[0];
+    currentCents = parseInt((parts[1] || '00').padEnd(2, '0').slice(0, 2));
+    buildRolling();
+    setTimeout(animateRolling, 50);
+  }
+
+  function renderNetworkTokens(name) {
+    const single = document.getElementById('tab-tokens');
+    const all = document.getElementById('tab-tokens-all');
+    if (name === 'All networks') {
+      single.style.display = 'none';
+      all.style.display = '';
+      return;
+    }
+    all.style.display = 'none';
+    single.style.display = '';
+    const data = NETWORK_DATA[name];
+    if (!data) return;
+    single.innerHTML = data.tokens.map((t, i) => `
+      <div class="token-item a-slide-up" style="animation-delay:${i * 45}ms;${t.onclick ? 'cursor:pointer;' : ''}" ${t.onclick ? `onclick="${t.onclick}"` : ''}>
+        <div class="token-icon">
+          <img src="${LOGO_URL[t.logo]}" onerror="this.style.opacity='0.3'">
+        </div>
+        <div class="token-info">
+          <div class="token-name">${t.name}</div>
+          <div class="token-sub">${t.sub}</div>
+        </div>
+        <div class="token-values">
+          <div class="token-amount">${t.price}</div>
+          <div class="token-change ${t.pos ? 'positive' : 'negative'}">
+            ${t.pos ? UP_SVG : DN_SVG}
+            ${t.pct}
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  /* ── Swap Calculator numpad ── */
+  let swapAmountStr = '100';
+  const SWAP_RATE = 0.40119649; // MATIC → APE
+
+  function numpadPress(val) {
+    if (val === 'back') {
+      swapAmountStr = swapAmountStr.slice(0, -1) || '0';
+    } else if (val === '.') {
+      if (!swapAmountStr.includes('.')) swapAmountStr += '.';
+    } else {
+      if (swapAmountStr === '0') swapAmountStr = val;
+      else if (swapAmountStr.length < 10) swapAmountStr += val;
+    }
+    const el = document.getElementById('swap-calc-amount');
+    if (el) el.textContent = swapAmountStr;
+    const equiv = ((parseFloat(swapAmountStr) || 0) * SWAP_RATE).toFixed(6);
+    const equivEl = document.getElementById('swap-calc-equiv');
+    if (equivEl) equivEl.textContent = `≈ ${equiv} APE`;
+  }
+
+  // Init on load
+  document.addEventListener('DOMContentLoaded', () => {
+    setBalance('232.00');
+    renderNetworkTokens('Polygon');
+    animateHomeIn();
+    setTimeout(animateRolling, 300);
+  });
+</script>
+</body>
+</html>

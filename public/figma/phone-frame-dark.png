@@ -1,0 +1,44 @@
+<svg preserveAspectRatio="none" width="100%" height="100%" overflow="visible" style="display: block;" viewBox="0 0 413.518 883" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Group 1">
+<rect id="Rectangle 13" x="112.966" y="879.891" width="5.18192" height="3.10915" fill="var(--fill-0, #626262)"/>
+<rect id="Rectangle 8" x="9.60916" y="6.5" width="394.299" height="870" rx="57.5" stroke="var(--stroke-0, black)" stroke-width="13"/>
+<rect id="Rectangle 11" x="4.60916" y="1.5" width="404.299" height="880" rx="62.5" stroke="var(--stroke-0, #D7D7D7)" stroke-width="3"/>
+<path id="Rectangle 9" d="M127.475 8.29108H286.042V35.1103C286.042 48.9174 274.849 60.1103 261.042 60.1103H152.475C138.668 60.1103 127.475 48.9175 127.475 35.1103V8.29108Z" fill="var(--fill-0, black)"/>
+<rect id="Rectangle 10" x="135.766" y="18.6549" width="108.538" height="24.8732" rx="12.4366" fill="var(--fill-0, #171616)"/>
+<circle id="Ellipse 2" cx="264.796" cy="31.6097" r="12.9548" fill="var(--fill-0, #171616)"/>
+<rect id="Rectangle 12" x="315.061" width="5.18192" height="3.10915" fill="var(--fill-0, #626262)"/>
+<rect id="Rectangle 18" x="100.529" y="879.891" width="5.18192" height="3.10915" fill="var(--fill-0, #626262)"/>
+<path id="Rectangle 14" d="M410.408 121.257V121.257C411.443 121.257 411.96 121.257 412.361 121.444C412.789 121.643 413.132 121.986 413.331 122.413C413.518 122.814 413.518 123.332 413.518 124.366V214.532C413.518 215.566 413.518 216.083 413.331 216.485C413.132 216.912 412.789 217.255 412.361 217.454C411.96 217.641 411.443 217.641 410.408 217.641V217.641V121.257Z" fill="url(#paint0_linear_0_4)"/>
+<path id="Rectangle 15" d="M0 151.312C0 150.278 0 149.76 0.186735 149.359C0.385571 148.932 0.728895 148.589 1.15616 148.39C1.55742 148.203 2.07466 148.203 3.10915 148.203V148.203V175.149V175.149C2.07466 175.149 1.55742 175.149 1.15616 174.962C0.728895 174.763 0.385571 174.42 0.186735 173.993C0 173.592 0 173.074 0 172.04V151.312Z" fill="url(#paint1_linear_0_4)"/>
+<path id="Rectangle 16" d="M0 207.277C0 206.243 0 205.725 0.186735 205.324C0.385571 204.897 0.728895 204.553 1.15616 204.355C1.55742 204.168 2.07466 204.168 3.10915 204.168V204.168V245.623V245.623C2.07466 245.623 1.55742 245.623 1.15616 245.437C0.728895 245.238 0.385571 244.894 0.186735 244.467C0 244.066 0 243.549 0 242.514V207.277Z" fill="url(#paint2_linear_0_4)"/>
+<path id="Rectangle 17" d="M0 259.096C0 258.062 0 257.545 0.186735 257.143C0.385571 256.716 0.728895 256.373 1.15616 256.174C1.55742 255.987 2.07466 255.987 3.10915 255.987V255.987V297.442V297.442C2.07466 297.442 1.55742 297.442 1.15616 297.256C0.728895 297.057 0.385571 296.714 0.186735 296.286C0 295.885 0 295.368 0 294.333V259.096Z" fill="url(#paint3_linear_0_4)"/>
+<circle id="Ellipse 3" cx="264.796" cy="31.6097" r="7.77289" fill="var(--fill-0, #222222)"/>
+<circle id="Ellipse 4" cx="3.10915" cy="3.10915" r="3.10915" transform="matrix(-1 0 0 1 268.424 27.9824)" fill="url(#paint4_linear_0_4)"/>
+</g>
+<defs>
+<linearGradient id="paint0_linear_0_4" x1="401.599" y1="170.654" x2="426.472" y2="170.654" gradientUnits="userSpaceOnUse">
+<stop stop-color="white"/>
+<stop offset="0.895833" stop-opacity="0.140625"/>
+<stop offset="1" stop-opacity="0"/>
+</linearGradient>
+<linearGradient id="paint1_linear_0_4" x1="-8.80927" y1="162.013" x2="16.064" y2="162.013" gradientUnits="userSpaceOnUse">
+<stop stop-color="white"/>
+<stop offset="0.895833" stop-opacity="0.140625"/>
+<stop offset="1" stop-opacity="0"/>
+</linearGradient>
+<linearGradient id="paint2_linear_0_4" x1="-8.80927" y1="225.414" x2="16.064" y2="225.414" gradientUnits="userSpaceOnUse">
+<stop stop-color="white"/>
+<stop offset="0.895833" stop-opacity="0.140625"/>
+<stop offset="1" stop-opacity="0"/>
+</linearGradient>
+<linearGradient id="paint3_linear_0_4" x1="-8.80927" y1="277.233" x2="16.064" y2="277.233" gradientUnits="userSpaceOnUse">
+<stop stop-color="white"/>
+<stop offset="0.895833" stop-opacity="0.140625"/>
+<stop offset="1" stop-opacity="0"/>
+</linearGradient>
+<linearGradient id="paint4_linear_0_4" x1="6.21831" y1="7.25469" x2="2.59096" y2="2.07277" gradientUnits="userSpaceOnUse">
+<stop stop-color="#9CA0C5"/>
+<stop offset="1" stop-color="#9CA0C5" stop-opacity="0"/>
+</linearGradient>
+</defs>
+</svg>
