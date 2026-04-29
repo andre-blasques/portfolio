@@ -329,7 +329,7 @@ export function Home() {
                   LinkedIn ↗
                 </a>
                 <a
-                  href="https://drive.google.com"
+                  href="/cv-andreblasques.pdf"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full text-sm font-medium transition-all"

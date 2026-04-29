@@ -175,7 +175,7 @@ export function ProjectAccordion({ projects }: ProjectAccordionProps) {
             <div
               key={project.slug}
               className="rounded-2xl overflow-hidden"
-              style={{ border: '1px solid rgba(255,255,255,0.08)', cursor: project.comingSoon ? 'default' : 'pointer' }}
+              style={{ border: '1px solid var(--border)', cursor: project.comingSoon ? 'default' : 'pointer' }}
               onClick={() => { if (!project.comingSoon) navigate(`/projects/${project.slug}`) }}
             >
               {/* Image header — clean, no gradient */}
@@ -197,21 +197,21 @@ export function ProjectAccordion({ projects }: ProjectAccordionProps) {
 
               {/* Details — always visible */}
               {!project.comingSoon && (
-                <div className="p-4" style={{ background: '#111' }}>
+                <div className="p-4" style={{ background: 'var(--surface-dark)' }}>
                   <div className="flex items-center justify-between gap-2 mb-3">
-                    <p className="text-sm font-semibold text-white leading-tight">{project.shortTitle}</p>
+                    <p className="text-sm font-semibold leading-tight" style={{ color: 'var(--text)' }}>{project.shortTitle}</p>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <Tag variant="accent">{project.category}</Tag>
                       <Tag>{project.year}</Tag>
                     </div>
                   </div>
-                  <p className="text-sm mb-3 text-white/70">{project.description}</p>
+                  <p className="text-sm mb-3" style={{ color: 'var(--text-muted)' }}>{project.description}</p>
                   {project.metrics.length > 0 && (
                     <div className="flex gap-4 mb-3">
                       {project.metrics.slice(0, 2).map(m => (
                         <div key={m.label}>
                           <p className="text-lg font-bold text-[#09f]">{m.value}</p>
-                          <p className="text-xs text-white/50">{m.label}</p>
+                          <p className="text-xs" style={{ color: 'var(--text-subtle)' }}>{m.label}</p>
                         </div>
                       ))}
                     </div>
@@ -220,7 +220,8 @@ export function ProjectAccordion({ projects }: ProjectAccordionProps) {
                     {project.tools.map(tool => (
                       <span
                         key={tool}
-                        className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-white/10 text-white/80"
+                        className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium"
+                        style={{ background: 'var(--surface)', color: 'var(--text-muted)' }}
                       >
                         {tool}
                       </span>

@@ -46,7 +46,7 @@ export function Header() {
           LinkedIn
         </a>
         <a
-          href="https://drive.google.com"
+          href="/cv-andreblasques.pdf"
           target="_blank"
           rel="noopener noreferrer"
           className="hidden sm:inline-flex items-center px-4 py-1.5 rounded-full text-sm font-medium transition-all"
