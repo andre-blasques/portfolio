@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import type { Project } from '../../data/projects'
 import { Tag } from './Tag'
 
@@ -27,16 +27,11 @@ export function ProjectAccordion({ projects }: ProjectAccordionProps) {
     leaveTimer.current = setTimeout(() => setActiveSlug(null), 120)
   }
 
-  const handleClick = (project: Project) => {
-    if (project.comingSoon) return
-    setActiveSlug(prev => (prev === project.slug ? null : project.slug))
-  }
-
   return (
     <>
       {/* Desktop: horizontal accordion */}
       <div className="hidden lg:flex gap-3 h-[480px]">
-        {projects.map((project, index) => {
+        {projects.map((project, _index) => {
           const isActive = activeSlug === project.slug
           return (
             <motion.div
@@ -175,7 +170,7 @@ export function ProjectAccordion({ projects }: ProjectAccordionProps) {
 
       {/* Mobile/Tablet: always-open web-style dark cards */}
       <div className="flex lg:hidden flex-col gap-6">
-        {projects.map((project, index) => {
+        {projects.map((project, _index) => {
           return (
             <div
               key={project.slug}
