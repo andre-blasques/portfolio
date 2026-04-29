@@ -2110,6 +2110,11 @@ export function ProjectPage() {
   const { slug } = useParams<{ slug: string }>()
   const project = projects.find(p => p.slug === slug)
 
+  useEffect(() => {
+    document.body.classList.add('project-page')
+    return () => document.body.classList.remove('project-page')
+  }, [])
+
   if (!project || project.comingSoon) {
     return (
       <div className="min-h-screen flex flex-col" style={{ background: 'transparent', position: 'relative', zIndex: 1 }}>

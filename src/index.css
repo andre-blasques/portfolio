@@ -32,12 +32,18 @@
   --surface-dark: #f0f0f0;
   --border: var(--color-border);
   --text: var(--color-text);
-  --text-muted: var(--color-text-muted);
-  --text-subtle: var(--color-text-subtle);
+  --text-muted: #646464; /* WCAG AA: 5.92:1 on white, 5.19:1 on cards */
+  --text-subtle: #696969; /* WCAG AA: 5.49:1 on white, 4.82:1 on cards */
   --logo-filter: invert(1);
   --icon-filter: invert(1);
   --grid-color: rgba(0, 0, 0, 0.08);
   --grid-color-lit: rgba(0, 102, 204, 0.28);
+}
+
+/* Weaker grid on project detail pages */
+body.project-page {
+  --grid-color: rgba(0, 0, 0, 0.035);
+  --grid-color-lit: rgba(0, 102, 204, 0.14);
 }
 
 .dark {
