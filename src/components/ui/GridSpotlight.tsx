@@ -14,6 +14,10 @@ export function GridSpotlight() {
   const cellRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
+    // Only register mouse listeners on devices with a real pointer (mouse/trackpad)
+    const hasPointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches
+    if (!hasPointer) return
+
     let rafId: number
 
     const onMove = (e: MouseEvent) => {
@@ -81,9 +85,10 @@ export function GridSpotlight() {
       >
         <div style={gridBase} />
 
-        {/* Cell fill — the 40×40 cell under the cursor */}
+        {/* Cell fill — hidden on touch devices via CSS */}
         <div
           ref={cellRef}
+          className="pointer-only"
           style={{
             position: 'absolute',
             top: 0,
@@ -98,9 +103,10 @@ export function GridSpotlight() {
         />
       </div>
 
-      {/* Spotlight (lit grid lines) — also behind content */}
+      {/* Spotlight (lit grid lines) — hidden on touch devices via CSS */}
       <div
         aria-hidden="true"
+        className="pointer-only"
         style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0 }}
       >
         <div ref={litRef} style={gridLit} />

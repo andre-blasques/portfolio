@@ -74,6 +74,13 @@ body.project-page {
   background-size: 200px 200px;
 }
 
+/* Cursor interactions — hidden on touch/mobile devices */
+@media (hover: none), (pointer: coarse) {
+  .pointer-only {
+    display: none !important;
+  }
+}
+
 @keyframes marquee-left {
   from { transform: translateX(0); }
   to   { transform: translateX(-50%); }
