@@ -1189,10 +1189,10 @@ function QRPaymentsCryptobackContent() {
           </motion.p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {[
-              { metric: '↑ Volume', label: 'Monthly payment volume', detail: 'Users paid more frequently after activating Cryptoback' },
-              { metric: '↑ Retention', label: '3+ payments per month', detail: 'Repeat usage increased among activated users' },
-              { metric: '↑ Transacting users', label: 'Unique users per month', detail: 'New users converted at a higher rate with the reward visible' },
-              { metric: '↓ Churn', label: 'No payment within 30 days', detail: 'Early drop-off reduced after the first Cryptoback reward' },
+              { metric: '↑︎ Volume', label: 'Monthly payment volume', detail: 'Users paid more frequently after activating Cryptoback' },
+              { metric: '↑︎ Retention', label: '3+ payments per month', detail: 'Repeat usage increased among activated users' },
+              { metric: '↑︎ Transacting users', label: 'Unique users per month', detail: 'New users converted at a higher rate with the reward visible' },
+              { metric: '↓︎ Churn', label: 'No payment within 30 days', detail: 'Early drop-off reduced after the first Cryptoback reward' },
             ].map((item, i) => (
               <motion.div
                 key={i}
@@ -2121,7 +2121,7 @@ export function ProjectPage() {
         <Header />
         <div className="flex-1 flex items-center justify-center flex-col gap-4 pt-20">
           <p className="text-2xl font-semibold" style={{ color: 'var(--text)' }}>Project not found</p>
-          <Link to="/" className="text-sm text-[#09f]">← Back to home</Link>
+          <Link to="/" className="text-sm text-[#09f]">{'←︎ Back to home'}</Link>
         </div>
         <Footer />
       </div>
@@ -2137,7 +2137,7 @@ export function ProjectPage() {
         <div className="max-w-4xl mx-auto">
           {/* Breadcrumb */}
           <motion.div custom={0} variants={fadeUp} initial="hidden" animate="visible" className="flex items-center gap-2 mb-8 text-sm" style={{ color: 'var(--text-subtle)' }}>
-            <Link to="/" style={{ color: 'var(--text-muted)' }}>← Home</Link>
+            <Link to="/" style={{ color: 'var(--text-muted)' }}>{'←︎ Home'}</Link>
             <span>/</span>
             <span style={{ color: 'var(--text-subtle)' }}>{project.shortTitle ?? project.title}</span>
           </motion.div>
@@ -2285,7 +2285,7 @@ export function ProjectPage() {
                         </div>
                         <p className="text-base font-semibold mb-1" style={{ color: 'var(--text)', fontFamily: 'var(--font-display)' }}>{p.title}</p>
                         <p className="text-sm leading-relaxed line-clamp-2" style={{ color: 'var(--text-muted)' }}>{p.description}</p>
-                        <p className="text-xs font-medium mt-3 text-[#09f] opacity-0 group-hover:opacity-100 transition-opacity duration-200">View project →</p>
+                        <p className="text-xs font-medium mt-3 text-[#09f] opacity-0 group-hover:opacity-100 transition-opacity duration-200">{'View project →︎'}</p>
                       </div>
                     </Link>
                   </motion.div>

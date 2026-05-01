@@ -326,7 +326,7 @@ export function Home() {
                   className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full text-sm font-medium transition-all"
                   style={{ background: 'var(--text)', color: 'var(--bg)' }}
                 >
-                  LinkedIn ↗
+                  {'LinkedIn ↗︎'}
                 </a>
                 <a
                   href="/cv-andreblasques.pdf"
@@ -335,7 +335,7 @@ export function Home() {
                   className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full text-sm font-medium transition-all"
                   style={{ background: 'var(--surface)', color: 'var(--text)', border: '1px solid var(--border)' }}
                 >
-                  Full CV ↗
+                  {'Full CV ↗︎'}
                 </a>
               </div>
             </ScrollReveal>

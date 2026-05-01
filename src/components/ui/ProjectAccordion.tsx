@@ -228,7 +228,7 @@ export function ProjectAccordion({ projects }: ProjectAccordionProps) {
                     ))}
                   </div>
                   <p className="inline-flex items-center gap-1 text-sm font-medium text-[#09f]">
-                    View project →
+                    {'View project →︎'}
                   </p>
                 </div>
               )}
