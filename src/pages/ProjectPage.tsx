@@ -1616,7 +1616,7 @@ function VirtualAccountsContent() {
             className="flex justify-center py-8"
           >
             <div style={{ width: 224 }}>
-              <ScrollVideo src="/videos/visual-concept.mov" />
+              <ScrollVideo src="/videos/visual-concept.mov" borderRadius={38} />
             </div>
           </motion.div>
           <motion.div initial={{ opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 }}>
