@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { useEffect } from 'react'
+import { Analytics } from '@vercel/analytics/react'
 import { Home } from './pages/Home'
 import { ProjectPage } from './pages/ProjectPage'
 import { GridSpotlight } from './components/ui/GridSpotlight'
@@ -18,6 +19,7 @@ export default function App() {
       <ScrollToTop />
       <GridSpotlight />
       <div className="grain" aria-hidden="true" />
+      <Analytics />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/projects/:slug" element={<ProjectPage />} />
